@@ -43,14 +43,14 @@ the JetStream usage of the account and the credentials in use.
 | `a`                                | add what the row holds: a consumer (on a stream), a key (on a bucket), a file (on an object store), a bucket or store (on their section), a stream elsewhere                                                     |
 | `A`                                | add a stream                                                                                                                                                                                                     |
 | `d` / `del`                        | delete the stream, consumer, bucket or object store                                                                                                                                                              |
-| `p`                                | purge a stream: everything, one subject, up to a sequence, or all but the last few                                                                                                                               |
+| `P`                                | purge a stream: everything, one subject, up to a sequence, or all but the last few                                                                                                                               |
 | `v`                                | messages of a stream, one page at a time (`[` `]` page, `g` jumps to a sequence, `f` keeps a subject, `d` deletes a message); on a bucket its keys, on an object store its objects                               |
 | `t`                                | subjects held in a stream with their message counts                                                                                                                                                              |
 | `n`                                | next messages of a pull consumer (`nats consumer next`), acknowledged, nak'ed, terminated or left alone                                                                                                          |
 | `u`                                | pause / resume a consumer                                                                                                                                                                                        |
 | `K` / `O`                          | keys of a bucket (put, edit, history, revert, delete, purge, watch) / objects of an object store (put, get, delete, watch)                                                                                       |
 | `s`                                | subscribe live to a stream's subjects, or to what you type                                                                                                                                                       |
-| `P` / `R`                          | publish a message (`nats pub`) / send a request and show the reply (`nats request`)                                                                                                                              |
+| `p` / `R`                          | publish a message (`nats pub`) / send a request and show the reply (`nats request`)                                                                                                                              |
 | `w`                                | watch a bucket or an object store live                                                                                                                                                                           |
 | `E`                                | events: JetStream advisories and metrics, server events                                                                                                                                                          |
 | `I`                                | account information                                                                                                                                                                                              |
@@ -104,6 +104,10 @@ the server would refuse. A few `nats` details the plans know:
   accepts the change, the plan drops it and says so in a note.
 - A value or a message body that spans several lines is piped to
   `nats kv put` / `nats pub --force-stdin` rather than passed as an argument.
+- `nats pub --schedule-after` (nats 0.4.0) sends a header the server
+  refuses, so a delay is turned into an absolute `--schedule-at` time when
+  the plan is built, and a note says so. Cron schedules take six fields,
+  seconds first.
 
 ## Messages and live screens
 
@@ -114,8 +118,17 @@ watches a bucket (every change with its revision, current values first) or
 an object store, `E` follows the JetStream advisories, metrics and server
 events. New entries are followed unless you scroll back; `end` follows
 again, `/` filters by subject or body, `c` clears, `enter` opens an entry,
-`P` publishes to its subject, `esc` stops the subscription. The last 5000
+`p` publishes to its subject, `esc` stops the subscription. The last 5000
 entries are kept.
+
+A message can also be scheduled instead of sent: the publish editor takes a
+schedule (once at an RFC3339 time, once after a delay, every interval, or on
+a cron line), the subject it is published to when the schedule fires, an
+optional source subject whose last message is sent instead of the body, and
+a TTL for the fired messages. The stream holding the publish subject must
+allow message schedules, a stream option that, like per-message TTL, cannot
+be turned off once on. One schedule lives on each subject: a new one
+replaces it.
 
 Subscriptions run in the client library over the same connection; what
 `nats sub` would print is what the screen shows, without parsing it.

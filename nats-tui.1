@@ -107,7 +107,7 @@ an object store, a bucket or store on their section, a stream elsewhere.
 adds a stream.
 .It Ic d
 Delete the stream, consumer, bucket or object store.
-.It Ic p
+.It Ic P
 Purge a stream: everything, one subject, up to a sequence, or all but the
 last few.
 .It Ic v
@@ -136,8 +136,12 @@ Keys of a bucket, objects of an object store: put, get, delete, history,
 revert, watch.
 .It Ic s
 Subscribe live to a stream's subjects or to typed ones.
-.It Ic P R
+.It Ic p R
 Publish a message; send a request and show the reply.
+A message can be scheduled instead: once at a time, once after a delay,
+every interval or on a six-field cron line, to be published to another
+subject when the schedule fires.
+The stream holding the subject must allow message schedules.
 .It Ic w
 Watch a bucket or an object store live.
 .It Ic E
@@ -202,7 +206,7 @@ filters by subject or body,
 clears,
 .Ic enter
 opens an entry,
-.Ic P
+.Ic p
 publishes to its subject and
 .Ic esc
 stops the subscription.
