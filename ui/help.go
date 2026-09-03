@@ -49,8 +49,16 @@ Main screen
                  click focuses a field, a second click edits or toggles it, OK
                  and Cancel are buttons; hold shift to select text meanwhile
   r              re-read the server   h              key map
+  ctrl+r         auto-refresh on/off (also: nats-tui -refresh 5s)
   ?              this help            q / esc / ^C   quit
   ctrl+z         suspend (fg to come back)
+
+Loading
+  The consumers of a stream and the objects of a store are fetched when the
+  stream is expanded or the store opened, one request each, and kept across
+  reloads: a server with hundreds of streams opens fast. ctrl+r re-reads
+  the server every 5 seconds (nats-tui -refresh sets the interval) on the
+  main screen, the details and the tables.
 
 Editors
   Fields are edited in place: enter starts editing a text field (enter keeps
@@ -69,7 +77,8 @@ Messages
   sequences, g jumps to one, f keeps one subject, enter shows a message with
   its headers (JSON is indented, binary is hex-dumped), d deletes it (nats
   stream rmm). t lists the subjects held with their counts; enter on one
-  shows its messages, P purges it.
+  shows its messages, P purges it. a adds a consumer
+  filtered on the shown subject (the subjects table offers it too).
 
 Live screens
   s subscribes to subjects (core NATS: what arrives from now on), w watches
@@ -149,6 +158,7 @@ var keymapSections = []struct {
 		{"J", "raw JSON"},
 		{"m", "toggle mouse"},
 		{"r", "reload"},
+		{"ctrl+r", "auto-refresh"},
 		{"h / ?", "keys / help"},
 		{"ctrl+z", "suspend"},
 		{"q / esc / ctrl+c", "quit"},
@@ -166,6 +176,7 @@ var keymapSections = []struct {
 		{"[ / ]", "older / newer page"},
 		{"g", "go to sequence"},
 		{"f", "filter subject"},
+		{"a", "consumer on the subject"},
 		{"d", "delete message"},
 	}},
 	{"Live screens", []keyDesc{

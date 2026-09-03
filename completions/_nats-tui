@@ -8,6 +8,7 @@ _nats-tui() {
     '-s[NATS server URL(s), overriding the context]:url' \
     '-creds[user credentials file, overriding the context]:file:_files' \
     '-timeout[time to wait on responses from NATS]:duration' \
+    '-refresh[re-read the server every interval]:duration' \
     '-nats[the nats binary to run]:binary:_files' \
     '-mouse[enable mouse support]' \
     '-json[print the server as JSON and exit]' \

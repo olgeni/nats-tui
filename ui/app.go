@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"github.com/nats-io/nats.go/jetstream"
 	"os"
 	"strings"
 	"time"
@@ -49,7 +50,18 @@ type (
 		help  string
 		err   error
 	}
-	tableMsg struct {
+	// lazyMsg brings the consumers of a stream or the objects of a store,
+	// fetched on demand; then runs once they are in the store.
+	lazyMsg struct {
+		stream string
+		bucket string
+		cons   []*cli.Consumer
+		objs   []*jetstream.ObjectInfo
+		err    error
+		then   func(m *Model) tea.Cmd
+	}
+	refreshMsg struct{ gen int }
+	tableMsg   struct {
 		tbl *table
 		err error
 	}
@@ -63,6 +75,11 @@ type Model struct {
 	store    *cli.Store
 	now      time.Time
 	connErr  string // why there is no connection (the main screen says so)
+	loading  bool   // a reload is under way
+
+	refresh        time.Duration // re-read the server this often (0: off)
+	refreshDefault time.Duration // what ctrl+r turns on (-refresh, else 5s)
+	refreshGen     int           // ticks of an earlier setting are ignored
 
 	width, height int
 	mouse         bool // mouse reporting on (m toggles, -mouse starts with it)
@@ -127,12 +144,85 @@ func New(s cli.Settings) *Model {
 	return &Model{settings: s, runner: cli.Exec{Settings: s}, width: 80, height: 24, expanded: map[string]bool{}, now: time.Now()}
 }
 
-func (m *Model) Init() tea.Cmd { return m.load() }
+func (m *Model) Init() tea.Cmd { return tea.Batch(m.load(), m.scheduleRefresh()) }
+
+// scheduleRefresh arms the next automatic reload.
+func (m *Model) scheduleRefresh() tea.Cmd {
+	if m.refresh <= 0 {
+		return nil
+	}
+	gen := m.refreshGen
+	return tea.Tick(m.refresh, func(time.Time) tea.Msg { return refreshMsg{gen: gen} })
+}
+
+// toggleRefresh turns the automatic reload on or off.
+func (m *Model) toggleRefresh() tea.Cmd {
+	m.refreshGen++
+	if m.refresh > 0 {
+		m.refresh = 0
+		m.setStatus("Auto-refresh off")
+		return nil
+	}
+	m.refresh = m.refreshDefault
+	if m.refresh <= 0 {
+		m.refresh = 5 * time.Second
+	}
+	m.setStatus("Auto-refresh every " + cli.HumanDuration(m.refresh) + " (ctrl+r turns it off)")
+	return m.scheduleRefresh()
+}
+
+// ensureConsumers runs then once the consumers of a stream are known,
+// fetching them first when they are not.
+func (m *Model) ensureConsumers(st *cli.Stream, then func(m *Model) tea.Cmd) tea.Cmd {
+	if st.Loaded || m.client == nil {
+		if then != nil {
+			return then(m)
+		}
+		return nil
+	}
+	c, name := m.client, st.Name()
+	m.setStatus("Loading the consumers of " + name + "…")
+	return func() tea.Msg {
+		cons, err := c.Consumers(name)
+		return lazyMsg{stream: name, cons: cons, err: err, then: then}
+	}
+}
+
+// ensureObjects runs then once the objects of a store are listed.
+func (m *Model) ensureObjects(b *cli.ObjectBucket, then func(m *Model) tea.Cmd) tea.Cmd {
+	if b.Loaded || m.client == nil {
+		if then != nil {
+			return then(m)
+		}
+		return nil
+	}
+	c, name := m.client, b.Name()
+	m.setStatus("Listing the objects of " + name + "…")
+	return func() tea.Msg {
+		objs, err := c.Objects(name)
+		return lazyMsg{bucket: name, objs: objs, err: err, then: then}
+	}
+}
 
 // load connects (or reconnects when the settings changed) and reads the
 // server.
 func (m *Model) load() tea.Cmd {
 	c, s := m.client, m.settings
+	// what was fetched on demand stays fetched across the reload
+	var opts cli.LoadOpts
+	if m.store != nil {
+		for _, st := range m.store.Streams {
+			if st.Loaded {
+				opts.Consumers = append(opts.Consumers, st.Name())
+			}
+		}
+		for _, b := range m.store.Objects {
+			if b.Loaded {
+				opts.Objects = append(opts.Objects, b.Name())
+			}
+		}
+	}
+	m.loading = true
 	return func() tea.Msg {
 		if c == nil || c.Settings != s || c.NC.IsClosed() {
 			if c != nil {
@@ -144,7 +234,7 @@ func (m *Model) load() tea.Cmd {
 				return loadedMsg{err: err}
 			}
 		}
-		st, err := c.Load()
+		st, err := c.Load(opts)
 		return loadedMsg{client: c, store: st, err: err}
 	}
 }
@@ -280,8 +370,48 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.clampCursor()
 		return m, nil
+	case refreshMsg:
+		if msg.gen != m.refreshGen || m.refresh <= 0 {
+			return m, nil
+		}
+		next := m.scheduleRefresh()
+		if m.loading || m.client == nil {
+			return m, next
+		}
+		switch m.scr {
+		case scrMain, scrDetails, scrTable:
+			return m, tea.Batch(next, m.load())
+		}
+		return m, next
+	case lazyMsg:
+		if m.store != nil {
+			if st := m.store.Stream(msg.stream); msg.stream != "" && st != nil {
+				for _, c := range msg.cons {
+					c.Stream = st
+				}
+				st.Consumers, st.ConsumersErr, st.Loaded = msg.cons, msg.err, true
+			}
+			if b := m.store.Object(msg.bucket); msg.bucket != "" && b != nil {
+				b.Objects, b.ListErr, b.Loaded = msg.objs, msg.err, true
+			}
+			m.rebuildRows()
+			if m.scr == scrDetails {
+				m.refreshDetail()
+			}
+		}
+		if strings.HasPrefix(m.status, "Loading the consumers") || strings.HasPrefix(m.status, "Listing the objects") {
+			m.status = ""
+		}
+		if msg.err != nil {
+			m.setError(msg.err.Error())
+		}
+		if msg.then != nil {
+			return m, msg.then(m)
+		}
+		return m, nil
 	case loadedMsg:
 		m.now = time.Now()
+		m.loading = false
 		if msg.client != nil {
 			m.client = msg.client
 		}
@@ -695,8 +825,9 @@ func (m *Model) frame(title, body, help string) string {
 
 // Run starts the TUI; mouse enables mouse reporting from the start (m
 // toggles it at runtime).
-func Run(s cli.Settings, mouse bool) error {
+func Run(s cli.Settings, mouse bool, refresh time.Duration) error {
 	m := New(s)
+	m.refresh, m.refreshDefault = refresh, refresh
 	opts := []tea.ProgramOption{tea.WithAltScreen()}
 	if mouse {
 		m.mouse = true

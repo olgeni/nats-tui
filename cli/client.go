@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -196,7 +197,12 @@ type Stream struct {
 	Info         *jetstream.StreamInfo
 	Consumers    []*Consumer
 	ConsumersErr error
+	Loaded       bool // the consumers were fetched (they load on demand)
 }
+
+// ConsumerCount is the number of consumers the server reports, known
+// before they are fetched.
+func (s *Stream) ConsumerCount() int { return s.Info.State.Consumers }
 
 // Name is the stream name.
 func (s *Stream) Name() string { return s.Info.Config.Name }
@@ -228,6 +234,7 @@ type ObjectBucket struct {
 	Info    *jetstream.StreamInfo
 	Objects []*jetstream.ObjectInfo
 	ListErr error
+	Loaded  bool // the objects were listed (they load on demand)
 }
 
 // Name is the bucket name.
@@ -269,22 +276,59 @@ func (s *Store) Object(name string) *ObjectBucket {
 	return nil
 }
 
-// ConsumerCount counts the consumers of every stream.
+// ConsumerCount counts the consumers of every stream, as the server
+// reports them.
 func (s *Store) ConsumerCount() int {
 	n := 0
 	for _, st := range s.Streams {
-		n += len(st.Consumers)
+		n += st.ConsumerCount()
 	}
 	return n
+}
+
+// SubjectClash finds a stream whose subjects overlap the given ones: two
+// streams cannot share a subject. except is a stream to leave out (the
+// one being edited). It returns the offending subject, the subject it
+// overlaps and the stream holding it, or empty strings.
+func (s *Store) SubjectClash(subjects []string, except string) (subject, other, stream string) {
+	for _, st := range s.Streams {
+		if st.Name() == except {
+			continue
+		}
+		for _, a := range subjects {
+			for _, b := range st.Info.Config.Subjects {
+				if SubjectsOverlap(a, b) {
+					return a, b, st.Name()
+				}
+			}
+		}
+	}
+	return "", "", ""
+}
+
+// LoadOpts says what Load fetches beyond the entities themselves. The
+// consumers of a stream and the objects of a store are one request each,
+// so by default they load on demand.
+type LoadOpts struct {
+	AllConsumers bool     // the consumers of every stream
+	AllObjects   bool     // the objects of every store
+	Consumers    []string // the consumers of these streams
+	Objects      []string // the objects of these stores
+}
+
+// LoadAll reads everything, consumers and objects included.
+func (c *Client) LoadAll() (*Store, error) {
+	return c.Load(LoadOpts{AllConsumers: true, AllObjects: true})
 }
 
 // HasJetStream reports whether the account has JetStream.
 func (s *Store) HasJetStream() bool { return s.Account != nil }
 
-// Load reads the state of the server: streams with their consumers,
-// buckets, object stores and services. It never fails for a missing
-// JetStream: the store then says so and holds the connection facts only.
-func (c *Client) Load() (*Store, error) {
+// Load reads the state of the server: streams, buckets, object stores
+// and services, plus the consumers and objects o asks for. It never
+// fails for a missing JetStream: the store then says so and holds the
+// connection facts only.
+func (c *Client) Load(o LoadOpts) (*Store, error) {
 	s := &Store{Loaded: time.Now(), ContextName: c.Name()}
 	s.Selected = natscontext.SelectedContext()
 	s.Contexts = natscontext.KnownContexts()
@@ -331,19 +375,24 @@ func (c *Client) Load() (*Store, error) {
 		}
 		s.Streams = append(s.Streams, &Stream{Info: si})
 	}
-	// consumers, a few streams at a time
+	// the consumers asked for, a few streams at a time
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, 8)
+	wanted := func(all bool, names []string, name string) bool {
+		return all || slices.Contains(names, name)
+	}
 	for _, st := range s.Streams {
+		if !wanted(o.AllConsumers, o.Consumers, st.Name()) {
+			continue
+		}
 		wg.Add(1)
 		go func(st *Stream) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			st.Consumers, st.ConsumersErr = c.consumers(st)
+			c.FillConsumers(st)
 		}(st)
 	}
-	wg.Wait()
 	// buckets
 	kvl := c.JS.KeyValueStores(ctx)
 	for st := range kvl.Status() {
@@ -353,7 +402,7 @@ func (c *Client) Load() (*Store, error) {
 		s.Warnings = append(s.Warnings, "list buckets: "+err.Error())
 	}
 	sort.Slice(s.KVs, func(i, j int) bool { return s.KVs[i].Name() < s.KVs[j].Name() })
-	// object stores, with their objects
+	// object stores, with the objects asked for
 	ol := c.JS.ObjectStores(ctx)
 	for st := range ol.Status() {
 		s.Objects = append(s.Objects, &ObjectBucket{Status: st, Info: infos["OBJ_"+st.Bucket()]})
@@ -363,12 +412,15 @@ func (c *Client) Load() (*Store, error) {
 	}
 	sort.Slice(s.Objects, func(i, j int) bool { return s.Objects[i].Name() < s.Objects[j].Name() })
 	for _, ob := range s.Objects {
+		if !wanted(o.AllObjects, o.Objects, ob.Name()) {
+			continue
+		}
 		wg.Add(1)
 		go func(ob *ObjectBucket) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			ob.Objects, ob.ListErr = c.Objects(ob.Name())
+			c.FillObjects(ob)
 		}(ob)
 	}
 	wg.Wait()
@@ -376,20 +428,37 @@ func (c *Client) Load() (*Store, error) {
 	return s, nil
 }
 
-func (c *Client) consumers(st *Stream) ([]*Consumer, error) {
+// Consumers lists the consumers of a stream; their Stream is left for
+// the caller to set.
+func (c *Client) Consumers(stream string) ([]*Consumer, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), Timeout)
 	defer cancel()
-	stream, err := c.JS.Stream(ctx, st.Name())
+	st, err := c.JS.Stream(ctx, stream)
 	if err != nil {
 		return nil, err
 	}
 	var out []*Consumer
-	l := stream.ListConsumers(ctx)
+	l := st.ListConsumers(ctx)
 	for ci := range l.Info() {
-		out = append(out, &Consumer{Info: ci, Stream: st})
+		out = append(out, &Consumer{Info: ci})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name() < out[j].Name() })
 	return out, l.Err()
+}
+
+// FillConsumers fetches the consumers of a stream into it.
+func (c *Client) FillConsumers(st *Stream) {
+	cons, err := c.Consumers(st.Name())
+	for _, cs := range cons {
+		cs.Stream = st
+	}
+	st.Consumers, st.ConsumersErr, st.Loaded = cons, err, true
+}
+
+// FillObjects lists the objects of a store into it.
+func (c *Client) FillObjects(b *ObjectBucket) {
+	b.Objects, b.ListErr = c.Objects(b.Name())
+	b.Loaded = true
 }
 
 // serverInfo collects the connection facts.

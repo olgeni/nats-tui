@@ -320,3 +320,24 @@ func sortStrings(l []string) {
 		}
 	}
 }
+
+// SubjectsOverlap tells whether two subject patterns can match the same
+// subject: "orders.>" and "orders.new" do, "orders.*" and "orders.a.b"
+// do not. Both may carry the wildcards * and >.
+func SubjectsOverlap(a, b string) bool {
+	return tokensOverlap(strings.Split(strings.TrimSpace(a), "."), strings.Split(strings.TrimSpace(b), "."))
+}
+
+func tokensOverlap(a, b []string) bool {
+	switch {
+	case len(a) == 0 && len(b) == 0:
+		return true
+	case len(a) == 0 || len(b) == 0:
+		return false
+	case a[0] == ">" || b[0] == ">":
+		return true // > matches one or more tokens, and both have at least one
+	case a[0] == "*" || b[0] == "*" || a[0] == b[0]:
+		return tokensOverlap(a[1:], b[1:])
+	}
+	return false
+}

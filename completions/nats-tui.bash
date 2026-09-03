@@ -9,9 +9,9 @@ _nats_tui() {
       COMPREPLY=($(compgen -W "$(nats context ls --names 2>/dev/null)" -- "$cur")); return ;;
     -creds|-nats)
       COMPREPLY=($(compgen -f -- "$cur")); return ;;
-    -s|-timeout)
+    -s|-timeout|-refresh)
       return ;;
   esac
-  COMPREPLY=($(compgen -W '-context -s -creds -timeout -nats -mouse -json -tree -version' -- "$cur"))
+  COMPREPLY=($(compgen -W '-context -s -creds -timeout -refresh -nats -mouse -json -tree -version' -- "$cur"))
 }
 complete -F _nats_tui nats-tui

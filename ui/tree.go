@@ -332,7 +332,7 @@ func (m *Model) summary(n node) string {
 		if c.Retention != 0 {
 			parts = append(parts, c.Retention.String())
 		}
-		if n := len(n.stream.Consumers); n > 0 {
+		if n := n.stream.ConsumerCount(); n > 0 {
 			parts = append(parts, fmt.Sprintf("%d consumers", n))
 		}
 		if c.MaxAge > 0 {
@@ -515,11 +515,15 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cursor = len(m.rows) - 1
 	case "right", "l":
 		switch n.kind {
-		case kStream, kSection:
+		case kStream:
+			m.expanded[n.id()] = true
+			m.rebuildRows()
+			return m, m.ensureConsumers(n.stream, nil)
+		case kSection:
 			m.expanded[n.id()] = true
 			m.rebuildRows()
 		case kContext:
-			m.expandAll(true)
+			return m, m.expandAll(true)
 		}
 	case "left":
 		switch n.kind {
@@ -543,32 +547,46 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		default:
-			m.expandAll(false)
+			return m, m.expandAll(false)
 		}
 	case " ":
 		switch n.kind {
 		case kStream, kSection:
-			m.expanded[n.id()] = !m.isOpen(n)
+			open := !m.isOpen(n)
+			m.expanded[n.id()] = open
 			m.rebuildRows()
+			if open && n.kind == kStream {
+				return m, m.ensureConsumers(n.stream, nil)
+			}
 		default:
-			m.expandAll(!m.anyExpanded())
+			return m, m.expandAll(!m.anyExpanded())
 		}
 	case "*":
-		m.expandAll(!m.anyExpanded())
+		return m, m.expandAll(!m.anyExpanded())
 	case "/":
 		m.filterOn = true
 	case "r":
 		return m, m.busyReload()
+	case "ctrl+r":
+		return m, m.toggleRefresh()
 	case "m":
 		return m, m.toggleMouse()
 	case "enter":
-		if n.kind == kSection {
+		switch n.kind {
+		case kSection:
 			m.expanded[n.id()] = !m.isOpen(n)
 			m.rebuildRows()
 			return m, nil
+		case kStream:
+			return m, m.ensureConsumers(n.stream, func(m *Model) tea.Cmd { m.showDetails(n, scrMain); return nil })
+		case kObject:
+			return m, m.ensureObjects(n.obj, func(m *Model) tea.Cmd { m.showDetails(n, scrMain); return nil })
 		}
 		m.showDetails(n, scrMain)
 	case "J":
+		if n.kind == kObject {
+			return m, m.ensureObjects(n.obj, func(m *Model) tea.Cmd { m.showJSON(n); return nil })
+		}
 		if n.kind != kSection {
 			m.showJSON(n)
 		}
@@ -725,14 +743,21 @@ func (m *Model) anyExpanded() bool {
 	return false
 }
 
-func (m *Model) expandAll(on bool) {
+// expandAll opens or closes every stream; opening fetches the consumers
+// not known yet.
+func (m *Model) expandAll(on bool) tea.Cmd {
+	var cmds []tea.Cmd
 	for _, st := range m.store.Streams {
 		m.expanded["stream:"+st.Name()] = on
+		if on && !st.Loaded {
+			cmds = append(cmds, m.ensureConsumers(st, nil))
+		}
 	}
 	for _, sec := range []group{secStreams, secKV, secObjects, secServices} {
 		m.expanded[fmt.Sprintf("sec:%d", sec)] = true
 	}
 	m.rebuildRows()
+	return tea.Batch(cmds...)
 }
 
 // updateEmpty handles keys when there is no connection.
@@ -831,6 +856,9 @@ func (m *Model) mainView() string {
 	if s.Server.TLS {
 		line3 = append(line3, styleLabel.Render("   TLS: ")+styleValue.Render("yes"))
 	}
+	if m.refresh > 0 {
+		line3 = append(line3, styleLabel.Render("   Refresh: ")+styleValue.Render("every "+cli.HumanDuration(m.refresh)))
+	}
 	b.WriteString(packLine(m.width, line3...) + "\n")
 
 	hdr := fmt.Sprintf(" Entities: %d streams, %d consumers, %d buckets, %d object stores", len(s.Streams), s.ConsumerCount(), len(s.KVs), len(s.Objects))
@@ -881,7 +909,7 @@ func (m *Model) mainView() string {
 			if m.isOpen(n) || m.filter != "" {
 				mark = "▾ "
 			}
-			if len(n.stream.Consumers) == 0 {
+			if n.stream.ConsumerCount() == 0 {
 				mark = "· "
 			}
 			name = "      " + mark + name
@@ -913,7 +941,10 @@ func (m *Model) mainView() string {
 			}
 		case kObject:
 			name = "      · " + name
-			msgs, size = fmt.Sprintf("%d objs", len(n.obj.Objects)), cli.Size(n.obj.Status.Size())
+			size = cli.Size(n.obj.Status.Size())
+			if n.obj.Loaded {
+				msgs = fmt.Sprintf("%d objs", len(n.obj.Objects))
+			}
 			if n.obj.Info != nil {
 				last = cli.Ago(n.obj.Info.State.LastTime, m.now)
 			}

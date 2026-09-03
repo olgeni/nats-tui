@@ -469,14 +469,16 @@ func (m *Model) streamDetail(d *detailWriter, s *cli.Stream) {
 			d.row("Replica "+p.Name, fmt.Sprintf("%s, seen %s ago, lag %d", state, cli.HumanDuration(p.Active), p.Lag))
 		}
 	}
-	d.section(fmt.Sprintf("Consumers (%d)", len(s.Consumers)))
+	d.section(fmt.Sprintf("Consumers (%d)", s.ConsumerCount()))
 	for _, cs := range s.Consumers {
 		d.row(cs.Name(), consumerLine(cs))
 	}
 	if s.ConsumersErr != nil {
 		d.warn("Error", s.ConsumersErr.Error())
 	}
-	if len(s.Consumers) == 0 && s.ConsumersErr == nil {
+	if !s.Loaded {
+		d.row("", "not fetched yet: expand the stream in the tree")
+	} else if len(s.Consumers) == 0 && s.ConsumersErr == nil {
 		d.row("", "")
 	}
 }
@@ -659,7 +661,9 @@ func (m *Model) objectDetail(d *detailWriter, b *cli.ObjectBucket) {
 	d.section("Object store")
 	d.row("Name", st.Bucket())
 	d.row("Description", st.Description())
-	d.row("Objects", fmt.Sprint(len(b.Objects)))
+	if b.Loaded {
+		d.row("Objects", fmt.Sprint(len(b.Objects)))
+	}
 	d.row("Size", cli.Size(st.Size()))
 	d.row("TTL", cli.HumanDuration(st.TTL()))
 	d.row("Storage", fmt.Sprintf("%s, %d replica(s)", cli.StorageName(st.Storage()), st.Replicas()))
@@ -677,6 +681,11 @@ func (m *Model) objectDetail(d *detailWriter, b *cli.ObjectBucket) {
 	if md := cli.Metadata(st.Metadata()); len(md) > 0 {
 		d.section("Metadata")
 		d.rows("Entries", md)
+	}
+	if !b.Loaded {
+		d.section("Objects")
+		d.row("", "not listed yet: O lists them")
+		return
 	}
 	d.section(fmt.Sprintf("Objects (%d)", len(b.Objects)))
 	for _, o := range b.Objects {

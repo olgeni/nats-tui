@@ -40,6 +40,7 @@ environment apply.
 	flag.StringVar(&s.Creds, "creds", "", "user credentials file, overriding the context (nats --creds)")
 	flag.StringVar(&s.Timeout, "timeout", "", "time to wait on responses from NATS (nats --timeout, default 5s)")
 	flag.StringVar(&s.Binary, "nats", "nats", "the nats binary to run")
+	refresh := flag.Duration("refresh", 0, "re-read the server every interval, like 5s (default: off; ctrl+r toggles it)")
 	flag.Parse()
 	if *showVersion {
 		fmt.Println("nats-tui", version)
@@ -52,7 +53,7 @@ environment apply.
 	if *asJSON || *asTree {
 		os.Exit(dump(s, *asJSON))
 	}
-	if err := ui.Run(s, *mouse); err != nil {
+	if err := ui.Run(s, *mouse, *refresh); err != nil {
 		fmt.Fprintln(os.Stderr, "nats-tui:", err)
 		os.Exit(1)
 	}
@@ -67,7 +68,7 @@ func dump(s cli.Settings, asJSON bool) int {
 		return 1
 	}
 	defer c.Close()
-	st, err := c.Load()
+	st, err := c.LoadAll()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "nats-tui:", err)
 		return 1

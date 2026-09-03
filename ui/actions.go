@@ -252,6 +252,10 @@ func (m *Model) addStream() tea.Cmd {
 			m.setError("stream " + cur.Name + " already exists")
 			return nil
 		}
+		if err := m.subjectClash(cur.Subjects, ""); err != nil {
+			m.setError(err.Error())
+			return nil
+		}
 		return m.runPlan(cli.AddStream(cur), nil)
 	})
 }
@@ -268,8 +272,23 @@ func (m *Model) editStream(st *cli.Stream) tea.Cmd {
 			m.setError(err.Error())
 			return nil
 		}
+		if err := m.subjectClash(cur.Subjects, st.Name()); err != nil {
+			m.setError(err.Error())
+			return nil
+		}
 		return m.runPlan(cli.EditStream(old, cur), nil)
 	})
+}
+
+// subjectClash refuses subjects another stream already listens on.
+func (m *Model) subjectClash(subjects []string, except string) error {
+	if subj, other, name := m.store.SubjectClash(subjects, except); name != "" {
+		if subj == other {
+			return fmt.Errorf("subject %s is already held by stream %s: two streams cannot share a subject", subj, name)
+		}
+		return fmt.Errorf("subject %s overlaps %s of stream %s: two streams cannot share a subject", subj, other, name)
+	}
+	return nil
 }
 
 // consumerFields is the editor of a consumer; existing is nil for a new one.
@@ -370,12 +389,26 @@ func consumerFromEditor(ed *editor, base cli.ConsumerSpec, existing bool) (cli.C
 	return s, nil
 }
 
-func (m *Model) addConsumer(st *cli.Stream) tea.Cmd {
+func (m *Model) addConsumer(st *cli.Stream) tea.Cmd { return m.addConsumerWith(st, nil) }
+
+// addConsumerWith opens the consumer editor with a filter already set:
+// the messages and subjects tables offer a consumer on what they show.
+func (m *Model) addConsumerWith(st *cli.Stream, filter []string) tea.Cmd {
 	if st == nil {
-		return m.pickStream("Add a consumer to which stream?", func(m *Model, st *cli.Stream) tea.Cmd { return m.addConsumer(st) })
+		return m.pickStream("Add a consumer to which stream?", func(m *Model, st *cli.Stream) tea.Cmd { return m.addConsumerWith(st, filter) })
 	}
+	// the names in use are needed to refuse a duplicate
+	return m.ensureConsumers(st, func(m *Model) tea.Cmd { return m.addConsumerEditor(st, filter) })
+}
+
+func (m *Model) addConsumerEditor(st *cli.Stream, filter []string) tea.Cmd {
 	spec := cli.NewConsumerSpec(st.Name())
-	return m.openEditor(newEditor("Add a consumer to "+st.Name(), m.consumerFields(spec, nil), m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+	title := "Add a consumer to " + st.Name()
+	if len(filter) > 0 {
+		spec.Filter = filter
+		title += " on " + cli.JoinList(filter)
+	}
+	return m.openEditor(newEditor(title, m.consumerFields(spec, nil), m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
 		cur, err := consumerFromEditor(ed, spec, false)
 		if err != nil {
 			m.setError(err.Error())
@@ -688,7 +721,11 @@ func (m *Model) pickObjectStore(title string, done func(m *Model, b *cli.ObjectB
 	}
 	var items []pickItem
 	for _, b := range m.store.Objects {
-		items = append(items, pickItem{fmt.Sprintf("%-24s %d objects", b.Name(), len(b.Objects)), b.Name()})
+		what := cli.Size(b.Status.Size())
+		if b.Loaded {
+			what = fmt.Sprintf("%d objects", len(b.Objects))
+		}
+		items = append(items, pickItem{fmt.Sprintf("%-24s %s", b.Name(), what), b.Name()})
 	}
 	if len(items) == 0 {
 		m.setError("There are no object stores yet (a on the object stores section adds one)")
@@ -709,7 +746,7 @@ func (m *Model) deleteEntity(n node) tea.Cmd {
 	case kStream:
 		st := n.stream
 		m.formVals.yes = false
-		return m.openForm(confirmForm("Delete stream "+st.Name()+"?", fmt.Sprintf("Its %s messages and %d consumer(s) go with it.", cli.Count(st.Info.State.Msgs), len(st.Consumers)), &m.formVals.yes), func(m *Model) tea.Cmd {
+		return m.openForm(confirmForm("Delete stream "+st.Name()+"?", fmt.Sprintf("Its %s messages and %d consumer(s) go with it.", cli.Count(st.Info.State.Msgs), st.ConsumerCount()), &m.formVals.yes), func(m *Model) tea.Cmd {
 			if !m.formVals.yes {
 				return nil
 			}
@@ -729,7 +766,11 @@ func (m *Model) deleteEntity(n node) tea.Cmd {
 	case kObject:
 		b := n.obj
 		m.formVals.yes = false
-		return m.openForm(confirmForm("Delete object store "+b.Name()+"?", fmt.Sprintf("Its %d object(s) go with it.", len(b.Objects)), &m.formVals.yes), func(m *Model) tea.Cmd {
+		what := "Its objects (" + cli.Size(b.Status.Size()) + ") go with it."
+		if b.Loaded {
+			what = fmt.Sprintf("Its %d object(s) go with it.", len(b.Objects))
+		}
+		return m.openForm(confirmForm("Delete object store "+b.Name()+"?", what, &m.formVals.yes), func(m *Model) tea.Cmd {
 			if !m.formVals.yes {
 				return nil
 			}
@@ -1204,6 +1245,10 @@ func (m *Model) copyStream(st *cli.Stream) tea.Cmd {
 		subjects := ed.list("subjects")
 		if len(subjects) == 0 && len(st.Info.Config.Subjects) > 0 {
 			m.setError("the copy needs subjects of its own: the server refuses a second stream on " + cli.JoinList(st.Info.Config.Subjects))
+			return nil
+		}
+		if err := m.subjectClash(subjects, ""); err != nil {
+			m.setError(err.Error())
 			return nil
 		}
 		return m.runPlan(cli.CopyStream(st.Name(), ed.str("name"), subjects), nil)

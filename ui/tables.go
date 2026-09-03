@@ -539,7 +539,7 @@ func messagesTable(stream string, seq uint64, filter string, msgs []cli.Message,
 	}
 	t := &table{kind: tkMessages, stream: stream, seq: seq, filter: filter, title: "Messages of stream " + stream, desc: desc,
 		cols:  []tcol{{"Seq", 9}, {"Time", 19}, {"Subject", 0}, {"Size", 9}, {"Hdr", 4}, {"Body", 0}},
-		help:  helpLine("enter", "message", "[ ]", "older / newer page", "g", "go to seq", "f", "filter subject", "d", "delete", "s", "subscribe", "esc", "back"),
+		help:  helpLine("enter", "message", "[ ]", "older / newer page", "g", "go to seq", "f", "filter subject", "a", "consumer", "d", "delete", "s", "subscribe", "esc", "back"),
 		empty: "no messages here (the stream may be empty, or purged past this point)"}
 	for _, msg := range msgs {
 		hdr := ""
@@ -620,6 +620,18 @@ func (m *Model) messageKeys(key string) tea.Cmd {
 		if st != nil {
 			return m.subscribe(node{kind: kStream, stream: st})
 		}
+	case "a":
+		// a consumer on what the table shows: the filter, else the subject
+		// of the selected message
+		if st != nil {
+			var filter []string
+			if t.filter != "" && t.filter != ">" {
+				filter = []string{t.filter}
+			} else if msg != nil {
+				filter = []string{msg.Subject}
+			}
+			return m.addConsumerWith(st, filter)
+		}
 	case "p":
 		subj := ""
 		if msg != nil {
@@ -665,7 +677,7 @@ func subjectsTable(stream, filter string, subs map[string]uint64) *table {
 	}
 	t := &table{kind: tkSubjects, stream: stream, filter: filter, title: "Subjects of stream " + stream, desc: desc,
 		cols:  []tcol{{"Subject", 0}, {"Messages", 12}},
-		help:  helpLine("enter", "messages of the subject", "f", "filter", "P", "purge the subject", "s", "subscribe", "esc", "back"),
+		help:  helpLine("enter", "messages of the subject", "f", "filter", "a", "consumer", "P", "purge the subject", "s", "subscribe", "esc", "back"),
 		empty: "no subjects (the stream holds no messages)"}
 	var rows []subjectRow
 	for s, n := range subs {
@@ -694,6 +706,10 @@ func (m *Model) subjectKeys(key string) tea.Cmd {
 	case "enter":
 		if sel != nil {
 			return m.loadMessages(t.stream, 0, sel.subject, true)
+		}
+	case "a":
+		if sel != nil {
+			return m.addConsumerWith(m.store.Stream(t.stream), []string{sel.subject})
 		}
 	case "f":
 		m.formVals.str = t.filter
@@ -911,7 +927,13 @@ func (m *Model) showObjects(b *cli.ObjectBucket) tea.Cmd {
 	if b == nil {
 		return nil
 	}
-	return m.openTable(m.objectsTable(b))
+	name := b.Name()
+	return m.ensureObjects(b, func(m *Model) tea.Cmd {
+		if b := m.store.Object(name); b != nil {
+			return m.openTable(m.objectsTable(b))
+		}
+		return nil
+	})
 }
 
 func (m *Model) objectsTable(b *cli.ObjectBucket) *table {

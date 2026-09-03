@@ -238,3 +238,18 @@ func TestHelpers(t *testing.T) {
 		t.Error("ParseMetadata accepted a bare key")
 	}
 }
+
+func TestSubjectsOverlap(t *testing.T) {
+	yes := [][2]string{{"orders.>", "orders.new"}, {"orders.*", "orders.new"}, {"orders.new", "orders.new"}, {">", "a.b.c"}, {"a.*.c", "a.b.*"}, {"a.>", "a.b.c"}, {"*.b", "a.>"}}
+	no := [][2]string{{"orders.*", "orders.a.b"}, {"orders.new", "orders.paid"}, {"a.>", "a"}, {"a.b", "a"}, {"a.*", "b.*"}, {"a.*.c", "a.b.d"}}
+	for _, p := range yes {
+		if !SubjectsOverlap(p[0], p[1]) || !SubjectsOverlap(p[1], p[0]) {
+			t.Errorf("%s and %s should overlap", p[0], p[1])
+		}
+	}
+	for _, p := range no {
+		if SubjectsOverlap(p[0], p[1]) || SubjectsOverlap(p[1], p[0]) {
+			t.Errorf("%s and %s should not overlap", p[0], p[1])
+		}
+	}
+}

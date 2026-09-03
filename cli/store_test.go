@@ -38,7 +38,7 @@ func run(t *testing.T, x cli.Exec, p *cli.Plan) {
 func TestLoadEmpty(t *testing.T) {
 	s, _ := testnats.Setup(t)
 	c := connect(t, s)
-	st, err := c.Load()
+	st, err := c.LoadAll()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestStreamRoundTrip(t *testing.T) {
 	spec.Name, spec.Subjects, spec.MaxAge, spec.MaxMsgs, spec.Description = "ORDERS", []string{"orders.>", "shipments.*"}, "2h", 500, "orders and shipments"
 	spec.DenyPurge, spec.Metadata, spec.Compression = true, []string{"team=ops"}, "s2"
 	run(t, x, cli.AddStream(spec))
-	st, err := c.Load()
+	st, err := c.LoadAll()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestStreamRoundTrip(t *testing.T) {
 		t.Errorf("deny purge: %s %v", line, p.Notes)
 	}
 	run(t, x, p)
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	got2 := cli.StreamSpecFrom(st.Stream("ORDERS").Info.Config)
 	if got2.MaxMsgs != -1 || cli.JoinList(got2.Subjects) != "orders.>" || !got2.DenyPurge || got2.MaxAge != "" || got2.RepubDest != "repub.>" || got2.Description != "orders and shipments" {
 		t.Errorf("after edit: %+v", got2)
@@ -147,7 +147,7 @@ func TestStreamRoundTrip(t *testing.T) {
 	if m, err := c.GetMsg("SCHED", 2); err != nil || !strings.HasPrefix(m.Header.Get("Nats-Schedule"), "@at ") || string(m.Data) != "tock" {
 		t.Errorf("after message: %+v %v", m, err)
 	}
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	got3 := cli.StreamSpecFrom(st.Stream("SCHED").Info.Config)
 	if !got3.AllowSchedules {
 		t.Errorf("allow schedules not read back: %+v", got3)
@@ -159,7 +159,7 @@ func TestStreamRoundTrip(t *testing.T) {
 		t.Errorf("get msg: %+v %v", m, err)
 	}
 	run(t, x, cli.DeleteMessage("ORDERS", 2))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	if n := st.Stream("ORDERS").Info.State.Msgs; n != 5 {
 		t.Errorf("after deleting one message: %d messages", n)
 	}
@@ -169,7 +169,7 @@ func TestStreamRoundTrip(t *testing.T) {
 	}
 	run(t, x, cli.CopyStream("ORDERS", "ORDERS2", []string{"orders2.>"}))
 	run(t, x, cli.DeleteStream("ORDERS"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	if st.Stream("ORDERS") != nil || st.Stream("ORDERS2") == nil {
 		t.Errorf("after copy and delete: %d streams", len(st.Streams))
 	}
@@ -195,7 +195,7 @@ func TestConsumerRoundTrip(t *testing.T) {
 	push := cli.NewConsumerSpec("EVENTS")
 	push.Name, push.Pull, push.Target, push.Ack = "pusher", false, "deliver.pusher", "none"
 	run(t, x, cli.AddConsumer(push))
-	st, err := c.Load()
+	st, err := c.LoadAll()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestConsumerRoundTrip(t *testing.T) {
 	run(t, x, p)
 	// next: fetch and ack one
 	run(t, x, cli.NextMessages("EVENTS", "worker", 1, "ack"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	for _, cn := range st.Stream("EVENTS").Consumers {
 		if cn.Name() == "worker" {
 			if cn.Info.Config.MaxDeliver != 7 || cn.Info.Config.Description != "edited" {
@@ -247,7 +247,7 @@ func TestConsumerRoundTrip(t *testing.T) {
 	}
 	// pause and resume
 	run(t, x, cli.PauseConsumer("EVENTS", "worker", time.Now().Add(time.Hour)))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	paused := false
 	for _, cn := range st.Stream("EVENTS").Consumers {
 		if cn.Name() == "worker" {
@@ -259,7 +259,7 @@ func TestConsumerRoundTrip(t *testing.T) {
 	}
 	run(t, x, cli.ResumeConsumer("EVENTS", "worker"))
 	run(t, x, cli.DeleteConsumer("EVENTS", "pusher"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	if len(st.Stream("EVENTS").Consumers) != 1 {
 		t.Errorf("after delete: %d consumers", len(st.Stream("EVENTS").Consumers))
 	}
@@ -278,7 +278,7 @@ func TestBucketsRoundTrip(t *testing.T) {
 	if res := cli.CreateKey("CONFIG", "only.once", "2", "").Execute(x, nil); !cli.Failed(res) {
 		t.Error("create on an existing key should fail")
 	}
-	st, err := c.Load()
+	st, err := c.LoadAll()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,7 +313,7 @@ func TestBucketsRoundTrip(t *testing.T) {
 	run(t, x, p)
 	run(t, x, cli.RevertKey("CONFIG", "app.name", 1))
 	run(t, x, cli.DeleteKey("CONFIG", "only.once"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	b = st.KV("CONFIG")
 	if b.Status.History() != 5 || b.Status.TTL() != 0 {
 		t.Errorf("after edit: history %d ttl %v", b.Status.History(), b.Status.TTL())
@@ -330,7 +330,7 @@ func TestBucketsRoundTrip(t *testing.T) {
 	file := filepath.Join(dir, "hello.txt")
 	os.WriteFile(file, []byte("hello object"), 0o644)
 	run(t, x, cli.PutObject("FILES", file, "hello.txt", "a greeting"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	ob := st.Object("FILES")
 	if ob == nil || len(ob.Objects) != 1 || ob.Objects[0].Name != "hello.txt" || ob.Objects[0].Size != 12 || ob.Objects[0].Description != "a greeting" {
 		t.Fatalf("objects: %+v", ob)
@@ -342,14 +342,14 @@ func TestBucketsRoundTrip(t *testing.T) {
 	}
 	run(t, x, cli.EditObjectStore(cli.ObjectSpecFrom(ob.Status, ob.Info), cli.ObjectSpec{Name: "FILES", Description: "changed", Storage: "file", Replicas: 1, MaxBytes: -1}))
 	run(t, x, cli.DeleteObject("FILES", "hello.txt"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	ob = st.Object("FILES")
 	if ob.Status.Description() != "changed" || len(ob.Objects) != 0 {
 		t.Errorf("after edit and delete: %q %d", ob.Status.Description(), len(ob.Objects))
 	}
 	run(t, x, cli.DeleteObjectStore("FILES"))
 	run(t, x, cli.DeleteKV("CONFIG"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	if len(st.KVs) != 0 || len(st.Objects) != 0 {
 		t.Errorf("after deleting the buckets: %d kv %d obj", len(st.KVs), len(st.Objects))
 	}
@@ -424,7 +424,7 @@ func TestRequestAndContexts(t *testing.T) {
 	run(t, x, cli.SaveContext(cli.ContextSpec{Name: "other", Server: c.Ctx.ServerURL(), Description: "second"}, false))
 	run(t, x, cli.CopyContext("other", "third"))
 	run(t, x, cli.DeleteContext("third"))
-	st, err := c.Load()
+	st, err := c.LoadAll()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -436,7 +436,7 @@ func TestRequestAndContexts(t *testing.T) {
 		t.Errorf("read context: %+v %v", info, err)
 	}
 	run(t, x, cli.SelectContext("other"))
-	st, _ = c.Load()
+	st, _ = c.LoadAll()
 	if st.Selected != "other" {
 		t.Errorf("selected: %s", st.Selected)
 	}

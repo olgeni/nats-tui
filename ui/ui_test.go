@@ -57,7 +57,7 @@ func testModel(t *testing.T) (*Model, cli.Exec) {
 		t.Fatal(err)
 	}
 	t.Cleanup(c.Close)
-	st, err := c.Load()
+	st, err := c.LoadAll()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -486,5 +486,145 @@ func TestCopyStreamNeedsSubjects(t *testing.T) {
 	press(m, "enter", "ctrl+s")
 	if v := m.View(); m.scr != scrPlan || !strings.Contains(v, "stream copy ORDERS ORDERS_COPY") || !strings.Contains(v, "--subjects=orders2.>") {
 		t.Fatalf("copy plan:\n%s", m.View())
+	}
+}
+
+func TestLazyConsumersAndObjects(t *testing.T) {
+	s, x := testnats.Setup(t)
+	testnats.Must(t, x, "stream", "add", "ORDERS", "--subjects=orders.>", "--defaults")
+	testnats.Must(t, x, "consumer", "add", "ORDERS", "worker", "--pull", "--defaults")
+	testnats.Must(t, x, "object", "add", "FILES")
+	m := New(s)
+	m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+	c, err := cli.Connect(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(c.Close)
+	st, err := c.Load(cli.LoadOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Stream("ORDERS").Loaded || st.Object("FILES").Loaded || st.ConsumerCount() != 1 {
+		t.Fatalf("lazy load: loaded=%v/%v consumers=%d", st.Stream("ORDERS").Loaded, st.Object("FILES").Loaded, st.ConsumerCount())
+	}
+	m.Update(loadedMsg{client: c, store: st})
+	if v := m.View(); !strings.Contains(v, "1 consumers") || strings.Contains(v, "worker") {
+		t.Fatalf("before expanding:\n%s", v)
+	}
+	// expanding fetches the consumers
+	press(m, "down", "down")
+	runCmd(t, m, press(m, "right"))
+	if !m.store.Stream("ORDERS").Loaded || !strings.Contains(m.View(), "worker") {
+		t.Fatalf("after expanding:\n%s", m.View())
+	}
+	// a reload keeps them
+	runCmd(t, m, m.load())
+	if !m.store.Stream("ORDERS").Loaded || !strings.Contains(m.View(), "worker") {
+		t.Fatalf("after reload:\n%s", m.View())
+	}
+	// the objects list when the store is opened
+	press(m, "down", "down", "down", "down")
+	if m.selected().kind != kObject {
+		t.Fatalf("selected %v", m.selected().kind)
+	}
+	runCmd(t, m, press(m, "O"))
+	if m.scr != scrTable || !m.store.Object("FILES").Loaded {
+		t.Fatalf("objects table: scr %v loaded %v", m.scr, m.store.Object("FILES").Loaded)
+	}
+}
+
+// update is Update returning only the command.
+func (m *Model) update(msg tea.Msg) tea.Cmd {
+	_, cmd := m.Update(msg)
+	return cmd
+}
+
+func TestAutoRefresh(t *testing.T) {
+	m, _ := testModel(t)
+	if m.refresh != 0 {
+		t.Fatal("refresh on by default")
+	}
+	press(m, "ctrl+r")
+	if m.refresh != 5*time.Second || !strings.Contains(m.View(), "Refresh: every 5s") {
+		t.Fatalf("refresh %v:\n%s", m.refresh, m.View())
+	}
+	// a tick of the current setting starts a reload on the main screen
+	// (the command is not run: it carries the next 5s timer)
+	m.loading = false
+	if cmd := m.update(refreshMsg{gen: m.refreshGen}); cmd == nil || !m.loading {
+		t.Error("tick did not start a reload")
+	}
+	// not while a reload runs, not in an editor
+	if cmd := m.update(refreshMsg{gen: m.refreshGen}); cmd == nil {
+		t.Error("tick while loading dropped the timer")
+	}
+	m.loading = false
+	press(m, "A")
+	if cmd := m.update(refreshMsg{gen: m.refreshGen}); cmd == nil || m.loading {
+		t.Errorf("tick in the editor: cmd %v loading %v", cmd != nil, m.loading)
+	}
+	press(m, "esc")
+	// a stale tick is ignored, and off is off
+	press(m, "ctrl+r")
+	if m.refresh != 0 || strings.Contains(m.View(), "Refresh:") {
+		t.Fatalf("refresh off: %v", m.refresh)
+	}
+	if cmd := m.update(refreshMsg{gen: m.refreshGen - 1}); cmd != nil {
+		t.Error("stale tick scheduled something")
+	}
+}
+
+func TestSubjectClashInEditors(t *testing.T) {
+	m, _ := testModel(t)
+	// a new stream on a subject ORDERS holds
+	press(m, "A")
+	ed := m.editor
+	for ed.row().key != "name" {
+		ed.move(1)
+	}
+	press(m, "enter")
+	for _, r := range "NEW" {
+		press(m, string(r))
+	}
+	press(m, "enter")
+	for ed.row().key != "subjects" {
+		ed.move(1)
+	}
+	press(m, "enter")
+	for _, r := range "orders.new" {
+		press(m, string(r))
+	}
+	press(m, "enter", "ctrl+s")
+	if m.scr != scrEditor || !strings.Contains(m.errMsg, "overlaps orders.> of stream ORDERS") {
+		t.Fatalf("clash: scr %v err %q", m.scr, m.errMsg)
+	}
+	press(m, "esc")
+	// editing ORDERS itself keeps its own subjects
+	press(m, "down", "down", "e")
+	press(m, "ctrl+s")
+	if m.scr != scrMain || m.errMsg != "" {
+		t.Fatalf("edit unchanged: scr %v err %q", m.scr, m.errMsg)
+	}
+}
+
+func TestConsumerFromMessages(t *testing.T) {
+	m, _ := testModel(t)
+	press(m, "down", "down")
+	runCmd(t, m, press(m, "v"))
+	if m.scr != scrTable {
+		t.Fatalf("messages: scr %v", m.scr)
+	}
+	runCmd(t, m, press(m, "a"))
+	if m.scr != scrEditor || m.editor.get("filter").text != "orders.new" {
+		t.Fatalf("consumer editor: scr %v filter %q", m.scr, m.editor.get("filter").text)
+	}
+	press(m, "enter")
+	for _, r := range "newonly" {
+		press(m, string(r))
+	}
+	press(m, "enter", "ctrl+s")
+	if v := m.View(); m.scr != scrPlan || !strings.Contains(v, "consumer add ORDERS newonly") || !strings.Contains(v, "--filter=orders.new") {
+		t.Fatalf("plan:\n%s", v)
 	}
 }
