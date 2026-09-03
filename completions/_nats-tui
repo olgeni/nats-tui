@@ -1,0 +1,18 @@
+#compdef nats-tui
+
+_nats-tui() {
+  local -a contexts
+  contexts=(${(f)"$(nats context ls --names 2>/dev/null)"})
+  _arguments -s \
+    '-context[nats configuration context to use]:context:($contexts)' \
+    '-s[NATS server URL(s), overriding the context]:url' \
+    '-creds[user credentials file, overriding the context]:file:_files' \
+    '-timeout[time to wait on responses from NATS]:duration' \
+    '-nats[the nats binary to run]:binary:_files' \
+    '-mouse[enable mouse support]' \
+    '-json[print the server as JSON and exit]' \
+    '-tree[print the streams, consumers and buckets as a text tree and exit]' \
+    '-version[print version and exit]'
+}
+
+_nats-tui "$@"

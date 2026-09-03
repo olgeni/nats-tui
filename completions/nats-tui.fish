@@ -1,0 +1,10 @@
+# fish completion for nats-tui: ~/.config/fish/completions/nats-tui.fish
+complete -c nats-tui -o context -r -f -a '(nats context ls --names 2>/dev/null)' -d 'nats configuration context to use'
+complete -c nats-tui -o s -r -f -d 'NATS server URL(s), overriding the context'
+complete -c nats-tui -o creds -r -F -d 'user credentials file, overriding the context'
+complete -c nats-tui -o timeout -r -f -d 'time to wait on responses from NATS'
+complete -c nats-tui -o nats -r -F -d 'the nats binary to run'
+complete -c nats-tui -o mouse -d 'enable mouse support'
+complete -c nats-tui -o json -d 'print the server as JSON and exit'
+complete -c nats-tui -o tree -d 'print the streams, consumers and buckets as a text tree and exit'
+complete -c nats-tui -o version -d 'print version and exit'
