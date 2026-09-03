@@ -91,6 +91,14 @@ shot() {
 	tmux capture-pane -t "$session" -p -e >"$tmp/$name.ansi"
 	printf '%s: %s\n' "$name" "$(tmux capture-pane -t "$session" -p | sed -n '1p')"
 	freeze --language ansi --window --font.family Menlo -o "$root/doc/$name.png" "$tmp/$name.ansi" >/dev/null </dev/null
+	# a screenshot holds about a thousand colors, so quantizing it to a
+	# palette cuts the file to a quarter with nothing visible lost
+	if command -v pngquant >/dev/null 2>&1; then
+		if pngquant --quality 60-90 --speed 1 --strip --skip-if-larger \
+			--force --output "$tmp/$name.png" "$root/doc/$name.png" 2>/dev/null; then
+			mv "$tmp/$name.png" "$root/doc/$name.png"
+		fi
+	fi
 	echo "doc/$name.png"
 }
 
