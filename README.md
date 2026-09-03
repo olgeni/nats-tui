@@ -197,4 +197,6 @@ under `t.TempDir()`, point a temporary `nats` context at it (through
 `XDG_CONFIG_HOME`), run the plans the editors would produce through the real
 `nats`, read the result back with the client library and compare — the same
 round trip the TUI makes. They skip themselves when `nats-server` or `nats`
-is not installed.
+is not installed. The server runs under a shell holding a pipe from the test
+binary and is stopped when the pipe closes, so it does not outlive a test
+that is interrupted, times out or is killed.
