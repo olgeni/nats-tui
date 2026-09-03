@@ -217,7 +217,7 @@ func (l *live) View() string {
 	if l.filterOn {
 		b.WriteString(helpLine("type", "filter subject/body", "enter", "keep", "esc", "clear"))
 	} else {
-		b.WriteString(helpLine("enter", "message", "↑↓", "browse (stops following)", "end", "follow", "P", "publish", "/", "filter", "c", "clear", "esc", "stop"))
+		b.WriteString(helpLine("enter", "message", "↑↓", "browse (stops following)", "end", "follow", "p", "publish", "/", "filter", "c", "clear", "esc", "stop"))
 	}
 	return lipgloss.NewStyle().MaxWidth(l.width).Render(b.String())
 }
@@ -328,7 +328,7 @@ func (m *Model) updateLive(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if e := l.selected(); e != nil {
 			m.showText(eventTitle(*e), eventText(*e, m.width), helpLine("esc", "back to the live view", "↑↓", "scroll"))
 		}
-	case "P":
+	case "p":
 		subject := ""
 		if e := l.selected(); e != nil && e.Kind == "msg" {
 			subject = e.Subject

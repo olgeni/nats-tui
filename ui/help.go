@@ -22,7 +22,7 @@ Main screen
                  a bucket or object store (on their section), a key (on a
                  bucket), a file (on an object store), a stream (elsewhere)
   A              add a stream        d / del        delete the entity
-  p              purge a stream (all, a subject, up to a sequence, keep n)
+  P              purge a stream (all, a subject, up to a sequence, keep n)
   v              messages of a stream, paged; on a bucket its keys, on an
                  object store its objects
   t              subjects held in a stream, with their message counts
@@ -30,7 +30,7 @@ Main screen
   u              pause / resume a consumer
   K / O          keys of a bucket / objects of an object store
   s              subscribe live: to a stream's subjects, or to what you type
-  P              publish a message (nats pub)
+  p              publish a message (nats pub)
   R              send a request and show the reply (nats request)
   w              watch a bucket or an object store live
   E              events: JetStream advisories and metrics, server events
@@ -69,19 +69,24 @@ Messages
   sequences, g jumps to one, f keeps one subject, enter shows a message with
   its headers (JSON is indented, binary is hex-dumped), d deletes it (nats
   stream rmm). t lists the subjects held with their counts; enter on one
-  shows its messages, p purges it.
+  shows its messages, P purges it.
 
 Live screens
   s subscribes to subjects (core NATS: what arrives from now on), w watches
   a bucket (every change with its revision) or an object store, E follows
   the JetStream advisories, metrics and server events. New entries are
   followed unless you scroll back; end follows again, / filters by subject
-  or body, c clears, enter opens an entry, P publishes to its subject, esc
+  or body, c clears, enter opens an entry, p publishes to its subject, esc
   stops the subscription. The screen keeps the last 5000 entries.
 
 Publishing and requests
-  P asks for a subject, a body, headers (K:V), a count and whether to
-  publish through JetStream; a multi-line body is piped to nats pub. R
+  p asks for a subject, a body, headers (K:V), a count and whether to
+  publish through JetStream; a multi-line body is piped to nats pub. The
+  message can be scheduled instead of sent: once at an RFC3339 time, once
+  after a delay, every interval, or on a six-field cron line (seconds
+  first), to a destination subject; the stream holding the publish subject
+  must allow message schedules (a stream option). One schedule lives on a
+  subject and a new one replaces it. R
   sends a request and shows the reply (or several, with a reply count), as
   nats request prints it. n on a pull consumer fetches its next messages
   with nats consumer next, acknowledged or not as you choose, and shows
@@ -124,14 +129,14 @@ var keymapSections = []struct {
 		{"e", "edit"},
 		{"a / A", "add child / stream"},
 		{"d / del", "delete"},
-		{"p", "purge stream"},
+		{"P", "purge stream"},
 		{"v", "messages / keys / objects"},
 		{"t", "subjects of a stream"},
 		{"n", "next messages (consumer)"},
 		{"u", "pause / resume consumer"},
 		{"K / O", "keys / objects"},
 		{"s", "subscribe live"},
-		{"P / R", "publish / request"},
+		{"p / R", "publish / request"},
 		{"w", "watch bucket live"},
 		{"E", "events live"},
 		{"I", "account info"},
@@ -169,7 +174,7 @@ var keymapSections = []struct {
 		{"/", "filter"},
 		{"c", "clear"},
 		{"enter", "show the entry"},
-		{"P", "publish"},
+		{"p", "publish"},
 		{"esc", "stop"},
 	}},
 	{"Tables", []keyDesc{

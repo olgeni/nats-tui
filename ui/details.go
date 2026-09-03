@@ -37,7 +37,7 @@ func (m *Model) detailsView() string {
 	var help string
 	switch n.kind {
 	case kStream:
-		help = helpLine("e", "edit", "v", "messages", "t", "subjects", "a", "add consumer", "p", "purge", "s", "subscribe", "J", "json", "esc", "back")
+		help = helpLine("e", "edit", "v", "messages", "t", "subjects", "a", "add consumer", "P", "purge", "s", "subscribe", "J", "json", "esc", "back")
 	case kConsumer:
 		help = helpLine("e", "edit", "n", "next", "u", "pause/resume", "J", "json", "esc", "back")
 	case kKV:
@@ -76,7 +76,7 @@ func (m *Model) updateDetails(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "a":
 			return m, m.addChild(n)
-		case "p":
+		case "P":
 			if st := n.streamOf(); st != nil {
 				return m, m.purgeStream(st)
 			}
@@ -104,7 +104,7 @@ func (m *Model) updateDetails(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.showContexts()
 		case "I":
 			return m, m.accountInfo()
-		case "P":
+		case "p":
 			return m, m.publish(defaultSubject(n))
 		case "R":
 			return m, m.request(defaultSubject(n))
@@ -420,6 +420,7 @@ func (m *Model) streamDetail(d *detailWriter, s *cli.Stream) {
 	d.row("Allow direct get", yesNo(c.AllowDirect))
 	d.row("Mirror direct get", yesNo(c.MirrorDirect))
 	d.row("Per-message TTL", yesNo(c.AllowMsgTTL))
+	d.row("Message schedules", yesNo(c.AllowMsgSchedules))
 	d.row("Batch publishing", yesNo(c.AllowBatchPublish))
 	d.row("Atomic publishing", yesNo(c.AllowAtomicPublish))
 	if c.SubjectDeleteMarkerTTL > 0 {

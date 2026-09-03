@@ -131,6 +131,30 @@ func TestStreamRoundTrip(t *testing.T) {
 	if err != nil || subs["orders.new"] != 5 || subs["orders.multi"] != 1 {
 		t.Errorf("subjects: %v %v", subs, err)
 	}
+	// schedules: the stream must allow them (a flag that never comes off), then
+	// the stored message carries the schedule headers
+	sched := cli.NewStreamSpec()
+	sched.Name, sched.Subjects, sched.AllowSchedules = "SCHED", []string{"sched.>"}, true
+	if line := strings.Join(cli.AddStream(sched).Cmds[0].Args, " "); !strings.Contains(line, "--allow-schedules") {
+		t.Errorf("add flags: %s", line)
+	}
+	run(t, x, cli.AddStream(sched))
+	run(t, x, cli.Publish(cli.PublishSpec{Subject: "sched.in", Body: "tick", Count: 1, Schedule: "at", ScheduleValue: time.Now().Add(time.Hour).UTC().Format(time.RFC3339), ScheduleDest: "sched.out"}))
+	run(t, x, cli.Publish(cli.PublishSpec{Subject: "sched.later", Body: "tock", Count: 1, Schedule: "after", ScheduleValue: "2h", ScheduleDest: "sched.out"}))
+	if m, err := c.GetMsg("SCHED", 1); err != nil || !strings.HasPrefix(m.Header.Get("Nats-Schedule"), "@at ") || m.Header.Get("Nats-Schedule-Target") != "sched.out" {
+		t.Errorf("scheduled message: %+v %v", m, err)
+	}
+	if m, err := c.GetMsg("SCHED", 2); err != nil || !strings.HasPrefix(m.Header.Get("Nats-Schedule"), "@at ") || string(m.Data) != "tock" {
+		t.Errorf("after message: %+v %v", m, err)
+	}
+	st, _ = c.Load()
+	got3 := cli.StreamSpecFrom(st.Stream("SCHED").Info.Config)
+	if !got3.AllowSchedules {
+		t.Errorf("allow schedules not read back: %+v", got3)
+	}
+	if p := cli.EditStream(got3, got3); !p.Empty() {
+		t.Errorf("re-reading SCHED yields a change: %v", p.Cmds)
+	}
 	if m, err := c.GetMsg("ORDERS", 3); err != nil || string(m.Data) != "order 3" {
 		t.Errorf("get msg: %+v %v", m, err)
 	}

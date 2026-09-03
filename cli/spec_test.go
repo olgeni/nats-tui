@@ -157,6 +157,28 @@ func TestMessagingPlans(t *testing.T) {
 	if a := strings.Join(p.Cmds[0].Args, " "); a != "pub x --force-stdin" || p.Cmds[0].Stdin != "a\nb" {
 		t.Errorf("multi-line pub: %s %q", a, p.Cmds[0].Stdin)
 	}
+	// schedules: every/cron/at pass through, dest/source/ttl follow, no --jetstream (implied)
+	p = Publish(PublishSpec{Subject: "sched.in", Body: "tick", Count: 1, JetStream: true, Schedule: "every", ScheduleValue: "1m", ScheduleDest: "sched.out", ScheduleSource: "sched.src", ScheduleTTL: "1h"})
+	if a := strings.Join(p.Cmds[0].Args, " "); a != "pub sched.in tick --schedule-every=1m --schedule-dest=sched.out --schedule-source=sched.src --schedule-ttl=1h" || len(p.Notes) != 1 {
+		t.Errorf("scheduled pub: %s %v", a, p.Notes)
+	}
+	p = Publish(PublishSpec{Subject: "s", Body: "b", Count: 1, Schedule: "cron", ScheduleValue: "0 */5 * * * *", ScheduleDest: "d"})
+	if a := strings.Join(p.Cmds[0].Args, " "); a != "pub s b --schedule-cron=0 */5 * * * * --schedule-dest=d" {
+		t.Errorf("cron pub: %s", a)
+	}
+	// after becomes an absolute --schedule-at, worked out here (nats 0.4.0 sends it wrong)
+	p = Publish(PublishSpec{Subject: "s", Body: "b", Count: 1, Schedule: "after", ScheduleValue: "1h", ScheduleDest: "d"})
+	a := strings.Join(p.Cmds[0].Args, " ")
+	at := p.Cmds[0].Args[3]
+	if !strings.HasPrefix(at, "--schedule-at=") || strings.Contains(a, "schedule-after") || len(p.Notes) != 2 {
+		t.Errorf("after pub: %s %v", a, p.Notes)
+	}
+	if when, err := time.Parse(time.RFC3339, strings.TrimPrefix(at, "--schedule-at=")); err != nil || time.Until(when) < 59*time.Minute || time.Until(when) > 61*time.Minute {
+		t.Errorf("after time: %s %v", at, err)
+	}
+	if p := Publish(PublishSpec{Subject: "s", Body: "b", Count: 1, Schedule: "none", JetStream: true}); !strings.Contains(strings.Join(p.Cmds[0].Args, " "), "--jetstream") {
+		t.Errorf("none is no schedule: %v", p.Cmds[0].Args)
+	}
 	p = Request(RequestSpec{Subject: "svc", Body: "ping", Replies: 0, Timeout: "2s", Count: 1})
 	if a := strings.Join(p.Cmds[0].Args, " "); a != "request svc ping --timeout=2s --replies=0" {
 		t.Errorf("request: %s", a)

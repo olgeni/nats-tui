@@ -580,7 +580,7 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.addStream()
 	case "d", "delete":
 		return m, m.deleteEntity(n)
-	case "p":
+	case "P":
 		if st := n.streamOf(); st != nil {
 			return m, m.purgeStream(st)
 		}
@@ -618,7 +618,7 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case "s":
 		return m, m.subscribe(n)
-	case "P":
+	case "p":
 		return m, m.publish(defaultSubject(n))
 	case "R":
 		return m, m.request(defaultSubject(n))
@@ -953,11 +953,11 @@ func (m *Model) mainView() string {
 	}
 	if m.width < 120 {
 		b.WriteString(" " + helpLine("↑↓", "select", "→←", "expand", "enter", "details", "e", "edit", "a/A", "add", "d", "delete", "/", "filter", "v", "messages") + "\n")
-		b.WriteString(" " + helpLine("s", "subscribe", "P", "publish", "R", "request", "w", "watch", "E", "events", "K/O", "keys/objects", "C", "contexts") + "\n")
+		b.WriteString(" " + helpLine("s", "subscribe", "p", "publish", "R", "request", "w", "watch", "E", "events", "K/O", "keys/objects", "C", "contexts") + "\n")
 		b.WriteString(" " + helpLine("h", "all keys", "?", "help", "q", "quit"))
 	} else {
-		b.WriteString(" " + helpLine("↑↓", "select", "→←", "expand/collapse", "enter", "details", "e", "edit", "a/A", "add consumer/stream", "d", "delete", "p", "purge", "/", "filter", "J", "json") + "\n")
-		b.WriteString(" " + helpLine("v", "messages", "t", "subjects", "n", "next msg", "u", "pause/resume", "K", "keys", "O", "objects", "s", "subscribe", "P", "publish", "R", "request", "w", "watch", "E", "events") + "\n")
+		b.WriteString(" " + helpLine("↑↓", "select", "→←", "expand/collapse", "enter", "details", "e", "edit", "a/A", "add consumer/stream", "d", "delete", "P", "purge", "/", "filter", "J", "json") + "\n")
+		b.WriteString(" " + helpLine("v", "messages", "t", "subjects", "n", "next msg", "u", "pause/resume", "K", "keys", "O", "objects", "s", "subscribe", "p", "publish", "R", "request", "w", "watch", "E", "events") + "\n")
 		b.WriteString(" " + helpLine("I", "account", "M", "monitor", "T", "reports", "C", "contexts", "S", "switch", "b/B", "backup/restore", "y", "copy", "x", "seal", "m", "mouse", "h", "all keys", "r", "reload", "?", "help", "q", "quit"))
 	}
 	return lipgloss.NewStyle().MaxWidth(m.width).Render(b.String())

@@ -55,6 +55,7 @@ type StreamSpec struct {
 	AllowDirect       bool
 	MirrorDirect      bool
 	AllowMsgTTL       bool
+	AllowSchedules    bool
 	AllowBatch        bool
 	AllowAtomic       bool
 	Mirror            string
@@ -86,7 +87,7 @@ func StreamSpecFrom(c jetstream.StreamConfig) StreamSpec {
 		MaxMsgs: c.MaxMsgs, MaxMsgsPerSubject: c.MaxMsgsPerSubject, MaxBytes: c.MaxBytes, MaxAge: DurationText(c.MaxAge),
 		MaxMsgSize: int64(c.MaxMsgSize), MaxConsumers: int64(c.MaxConsumers), DupeWindow: DurationText(c.Duplicates),
 		Ack: !c.NoAck, AllowRollup: c.AllowRollup, DenyDelete: c.DenyDelete, DenyPurge: c.DenyPurge,
-		AllowDirect: c.AllowDirect, MirrorDirect: c.MirrorDirect, AllowMsgTTL: c.AllowMsgTTL, AllowBatch: c.AllowBatchPublish, AllowAtomic: c.AllowAtomicPublish,
+		AllowDirect: c.AllowDirect, MirrorDirect: c.MirrorDirect, AllowMsgTTL: c.AllowMsgTTL, AllowSchedules: c.AllowMsgSchedules, AllowBatch: c.AllowBatchPublish, AllowAtomic: c.AllowAtomicPublish,
 		Metadata: Metadata(c.Metadata), FirstSeq: c.FirstSeq, Sealed: c.Sealed,
 	}
 	if s.Replicas == 0 {
@@ -221,6 +222,9 @@ func streamFlags(old *StreamSpec, s StreamSpec, add bool) []string {
 	// flags without a --no- form: only ever turned on
 	if s.AllowMsgTTL && (old == nil || !old.AllowMsgTTL) {
 		f.bool("--allow-msg-ttl", true)
+	}
+	if s.AllowSchedules && (old == nil || !old.AllowSchedules) {
+		f.bool("--allow-schedules", true)
 	}
 	if changed(oldStr(old, func(o StreamSpec) string { return o.Mirror }), s.Mirror) {
 		if s.Mirror != "" {
@@ -1096,7 +1100,23 @@ type PublishSpec struct {
 	Sleep     string
 	Reply     string
 	JetStream bool
+
+	// A schedule stores the message in a stream that allows schedules
+	// and publishes it to ScheduleDest when the schedule fires. One
+	// schedule lives on each publish subject: a new one replaces it.
+	Schedule       string // one of ScheduleKinds; "" publishes now
+	ScheduleValue  string // RFC3339 time, a duration, or a six-field cron line
+	ScheduleDest   string // where the message goes when the schedule fires
+	ScheduleSource string // read the body from the last message on this subject
+	ScheduleTTL    string // how long the fired messages live (needs per-message TTL)
 }
+
+// ScheduleKinds are the ways to schedule a message: at an RFC3339
+// time, after a duration, every interval, or on a cron line.
+var ScheduleKinds = []string{"none", "at", "after", "every", "cron"}
+
+// Scheduled tells whether the spec asks for a schedule.
+func (s PublishSpec) Scheduled() bool { return s.Schedule != "" && s.Schedule != "none" }
 
 // Publish sends messages. The body goes through stdin when it holds
 // newlines, so multi-line text survives; the preview says so.
@@ -1109,10 +1129,36 @@ func Publish(s PublishSpec) *Plan {
 		f.str("--sleep", s.Sleep)
 	}
 	f.str("--reply", s.Reply)
-	f.bool("--jetstream", s.JetStream)
 	desc := "publish the message"
 	if s.Count > 1 {
 		desc = fmt.Sprintf("publish %d messages", s.Count)
+	}
+	if s.Scheduled() {
+		p.Title = "Schedule a message on " + s.Subject
+		desc = "store the scheduled message (published to " + s.ScheduleDest + " when it fires)"
+		switch s.Schedule {
+		case "at":
+			f.str("--schedule-at", s.ScheduleValue)
+		case "after":
+			// nats 0.4.0 sends --schedule-after as a bare time, which the
+			// server refuses, so the time is worked out here instead.
+			at := s.ScheduleValue
+			if d, err := ParseDuration(s.ScheduleValue); err == nil {
+				at = time.Now().Add(d).UTC().Truncate(time.Second).Format(time.RFC3339)
+				p.Note("the time was computed when the plan was built: " + s.ScheduleValue + " from then is " + at)
+			}
+			f.str("--schedule-at", at)
+		case "every":
+			f.str("--schedule-every", s.ScheduleValue)
+		case "cron":
+			f.str("--schedule-cron", s.ScheduleValue)
+		}
+		f.str("--schedule-dest", s.ScheduleDest)
+		f.str("--schedule-source", s.ScheduleSource)
+		f.str("--schedule-ttl", s.ScheduleTTL)
+		p.Note("the stream holding " + s.Subject + " must allow message schedules; one schedule lives on that subject and a new one replaces it")
+	} else {
+		f.bool("--jetstream", s.JetStream)
 	}
 	if strings.Contains(s.Body, "\n") {
 		args := append([]string{"pub", s.Subject, "--force-stdin"}, f.args...)

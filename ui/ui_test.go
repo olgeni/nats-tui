@@ -407,7 +407,7 @@ func TestContextsTable(t *testing.T) {
 
 func TestPublishAndRequestPlans(t *testing.T) {
 	m, _ := testModel(t)
-	press(m, "down", "down", "P")
+	press(m, "down", "down", "p")
 	if m.scr != scrEditor || m.editor.get("subject").text != "orders." {
 		t.Fatalf("publish editor: %q", m.editor.get("subject").text)
 	}
@@ -449,3 +449,18 @@ func TestNoConnection(t *testing.T) {
 type errString string
 
 func (e errString) Error() string { return string(e) }
+
+func TestValidSchedule(t *testing.T) {
+	good := map[string]string{"at": "2026-09-03T18:00:00Z", "after": "10m", "every": "1h30m", "cron": "0 */5 * * * *"}
+	for k, v := range good {
+		if err := validSchedule(k, v); err != nil {
+			t.Errorf("%s %q: %v", k, v, err)
+		}
+	}
+	bad := map[string]string{"at": "tomorrow", "after": "soon", "every": "", "cron": "*/5 * * * *"}
+	for k, v := range bad {
+		if err := validSchedule(k, v); err == nil {
+			t.Errorf("%s %q accepted", k, v)
+		}
+	}
+}

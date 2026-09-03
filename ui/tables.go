@@ -620,7 +620,7 @@ func (m *Model) messageKeys(key string) tea.Cmd {
 		if st != nil {
 			return m.subscribe(node{kind: kStream, stream: st})
 		}
-	case "P":
+	case "p":
 		subj := ""
 		if msg != nil {
 			subj = msg.Subject
@@ -665,7 +665,7 @@ func subjectsTable(stream, filter string, subs map[string]uint64) *table {
 	}
 	t := &table{kind: tkSubjects, stream: stream, filter: filter, title: "Subjects of stream " + stream, desc: desc,
 		cols:  []tcol{{"Subject", 0}, {"Messages", 12}},
-		help:  helpLine("enter", "messages of the subject", "f", "filter", "p", "purge the subject", "s", "subscribe", "esc", "back"),
+		help:  helpLine("enter", "messages of the subject", "f", "filter", "P", "purge the subject", "s", "subscribe", "esc", "back"),
 		empty: "no subjects (the stream holds no messages)"}
 	var rows []subjectRow
 	for s, n := range subs {
@@ -700,7 +700,7 @@ func (m *Model) subjectKeys(key string) tea.Cmd {
 		return m.openForm(inputForm("Filter", "Subjects matching this pattern (wildcards allowed); blank for all.", ">", &m.formVals.str, nil), func(m *Model) tea.Cmd {
 			return m.loadSubjects(t.stream, strings.TrimSpace(m.formVals.str))
 		}, nil)
-	case "p":
+	case "P":
 		if sel != nil {
 			return m.runPlan(cli.PurgeStream(t.stream, sel.subject, 0, 0), nil)
 		}
@@ -708,7 +708,7 @@ func (m *Model) subjectKeys(key string) tea.Cmd {
 		if sel != nil {
 			return m.subscribeTo([]string{sel.subject}, "")
 		}
-	case "P":
+	case "p":
 		if sel != nil {
 			return m.publish(sel.subject)
 		}

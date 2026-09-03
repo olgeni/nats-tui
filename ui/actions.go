@@ -119,6 +119,7 @@ func (m *Model) streamFields(s cli.StreamSpec, existing *cli.Stream) []*field {
 		boolField("allow_direct", "Allow direct get (fast reads of single messages)", s.AllowDirect, ""),
 		boolField("mirror_direct", "Allow direct get on the origin of a mirror", s.MirrorDirect, ""),
 		boolField("allow_msg_ttl", "Allow per-message TTL headers (cannot be turned off)", s.AllowMsgTTL, ""),
+		boolField("allow_schedules", "Allow message schedules (cannot be turned off)", s.AllowSchedules, ""),
 		boolField("allow_batch", "Allow fast batch publishing", s.AllowBatch, ""),
 		section("Sources"),
 		textField("mirror", "Mirror of", s.Mirror, "copy everything from this stream (no subjects of its own then)", "(none)", nil),
@@ -166,6 +167,7 @@ func streamFromEditor(ed *editor, base cli.StreamSpec, existing bool) (cli.Strea
 	s.MaxAge, s.MaxMsgSize, s.MaxConsumers, s.DupeWindow = ed.str("max_age"), ed.bytes("max_msg_size"), ed.int64("max_consumers"), ed.str("dupe_window")
 	s.Ack, s.AllowRollup, s.DenyDelete, s.DenyPurge = ed.on("ack"), ed.on("allow_rollup"), ed.on("deny_delete"), ed.on("deny_purge")
 	s.AllowDirect, s.MirrorDirect, s.AllowMsgTTL, s.AllowBatch = ed.on("allow_direct"), ed.on("mirror_direct"), ed.on("allow_msg_ttl"), ed.on("allow_batch")
+	s.AllowSchedules = ed.on("allow_schedules")
 	s.Mirror, s.Sources = ed.str("mirror"), ed.list("sources")
 	s.RepubSource, s.RepubDest, s.RepubHeaders = ed.str("repub_source"), ed.str("repub_dest"), ed.on("repub_headers")
 	s.TransformSource, s.TransformDest = ed.str("transform_source"), ed.str("transform_dest")
@@ -955,9 +957,17 @@ func (m *Model) publish(subject string) tea.Cmd {
 		textField("sleep", "Sleep between messages", "", "with a count: 100ms, 1s…", "(none)", cli.ValidDuration),
 		textField("reply", "Reply subject", "", "ask for replies here (blank: none)", "(none)", nil),
 		boolField("jetstream", "Publish through JetStream (wait for the stream's ack)", false, ""),
+		section("Schedule (the stream holding the subject must allow message schedules)"),
+		choiceField("schedule", "Schedule", cli.ScheduleKinds, "none", "at: once at a time; after: once after a delay; every: on an interval; cron: on a cron line"),
+		textField("schedule_value", "When", "", "at: RFC3339 time (2026-09-03T18:00:00Z); after/every: a duration (10m, 2h); cron: six fields, seconds first (0 */5 * * * *)", "(time, delay, interval or cron line)", nil),
+		textField("schedule_dest", "Destination", "", "subject the message is published to when the schedule fires", "(required with a schedule)", nil),
+		textField("schedule_source", "Source", "", "publish the last message stored on this subject instead of the body (blank: the body)", "(the body)", nil),
+		textField("schedule_ttl", "TTL of the fired messages", "", "how long the published messages live (needs per-message TTL on the stream)", "(none)", cli.ValidDuration),
 	}
 	return m.openEditor(newEditor("Publish a message", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
 		s := cli.PublishSpec{Subject: ed.str("subject"), Body: ed.get("body").text, Headers: ed.list("headers"), Count: ed.int64("count"), Sleep: ed.str("sleep"), Reply: ed.str("reply"), JetStream: ed.on("jetstream")}
+		s.Schedule, s.ScheduleValue, s.ScheduleDest = ed.choice("schedule"), ed.str("schedule_value"), ed.str("schedule_dest")
+		s.ScheduleSource, s.ScheduleTTL = ed.str("schedule_source"), ed.str("schedule_ttl")
 		if s.Count < 1 {
 			s.Count = 1
 		}
@@ -967,8 +977,41 @@ func (m *Model) publish(subject string) tea.Cmd {
 				return nil
 			}
 		}
+		if s.Scheduled() {
+			if err := validSchedule(s.Schedule, s.ScheduleValue); err != nil {
+				m.setError(err.Error())
+				return nil
+			}
+			if s.ScheduleDest == "" {
+				m.setError("a schedule needs a destination subject")
+				return nil
+			}
+		}
 		return m.runPlan(cli.Publish(s), nil)
 	})
+}
+
+// validSchedule checks the "when" of a schedule against its kind.
+func validSchedule(kind, value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fmt.Errorf("say when: a schedule needs a time, a duration or a cron line")
+	}
+	switch kind {
+	case "at":
+		if _, err := time.Parse(time.RFC3339, value); err != nil {
+			return fmt.Errorf("the time is written as RFC3339, like 2026-09-03T18:00:00Z")
+		}
+	case "after", "every":
+		if err := cli.ValidDuration(value); err != nil {
+			return err
+		}
+	case "cron":
+		if len(strings.Fields(value)) != 6 {
+			return fmt.Errorf("the server wants a six-field cron line, seconds first: 0 */5 * * * *")
+		}
+	}
+	return nil
 }
 
 func (m *Model) request(subject string) tea.Cmd {
