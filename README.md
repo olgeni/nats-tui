@@ -104,10 +104,18 @@ the server would refuse. A few `nats` details the plans know:
   accepts the change, the plan drops it and says so in a note.
 - A value or a message body that spans several lines is piped to
   `nats kv put` / `nats pub --force-stdin` rather than passed as an argument.
-- `nats pub --schedule-after` (nats 0.4.0) sends a header the server
-  refuses, so a delay is turned into an absolute `--schedule-at` time when
-  the plan is built, and a note says so. Cron schedules take six fields,
-  seconds first.
+- `nats pub --schedule-after` (nats 0.4.0) sends the `Nats-Schedule` header
+  without its `@at` prefix, which the server refuses
+  ([natscli#1719](https://github.com/nats-io/natscli/issues/1719)). The flag
+  is only a shorthand for `--schedule-at` with the current time plus the
+  delay, so the plan does that computation itself and always sends
+  `--schedule-at`; this works on every version of `nats` and keeps the
+  preview honest, since no command runs that was not shown. The one cost is
+  that the time is fixed when the plan is built, not when it runs: leave the
+  preview open for a minute and the schedule fires a minute earlier than the
+  delay says. The note on the plan shows the absolute time. Once the fix is
+  released, `--schedule-after` can be sent directly to versions that have it.
+  Cron schedules take six fields, seconds first.
 
 ## Messages and live screens
 
