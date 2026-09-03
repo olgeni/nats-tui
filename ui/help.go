@@ -56,7 +56,8 @@ Main screen
 Loading
   The consumers of a stream and the objects of a store are fetched when the
   stream is expanded or the store opened, one request each, and kept across
-  reloads: a server with hundreds of streams opens fast. ctrl+r re-reads
+  reloads: a server with hundreds of streams opens fast. A service is asked
+  for its request statistics when its details open. ctrl+r re-reads
   the server every 5 seconds (nats-tui -refresh sets the interval) on the
   main screen, the details and the tables.
 
