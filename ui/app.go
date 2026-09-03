@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/nats-io/nats.go/micro"
 	"os"
 	"strings"
 	"time"
@@ -50,13 +51,16 @@ type (
 		help  string
 		err   error
 	}
-	// lazyMsg brings the consumers of a stream or the objects of a store,
-	// fetched on demand; then runs once they are in the store.
+	// lazyMsg brings the consumers of a stream, the objects of a store or
+	// the statistics of a service instance, fetched on demand; then runs
+	// once they are in the store.
 	lazyMsg struct {
 		stream string
 		bucket string
+		svc    string // instance id
 		cons   []*cli.Consumer
 		objs   []*jetstream.ObjectInfo
+		stats  *micro.Stats
 		err    error
 		then   func(m *Model) tea.Cmd
 	}
@@ -201,6 +205,20 @@ func (m *Model) ensureObjects(b *cli.ObjectBucket, then func(m *Model) tea.Cmd) 
 	return func() tea.Msg {
 		objs, err := c.Objects(name)
 		return lazyMsg{bucket: name, objs: objs, err: err, then: then}
+	}
+}
+
+// serviceStats asks a service instance for its statistics, once per
+// discovery: they land in the store, and on the details screen when it is
+// open on the instance.
+func (m *Model) serviceStats(s *cli.Service) tea.Cmd {
+	if s.Stats != nil || s.StatsErr != nil || m.client == nil {
+		return nil
+	}
+	c, name, id := m.client, s.Info.Name, s.Info.ID
+	return func() tea.Msg {
+		st, err := c.ServiceStats(name, id)
+		return lazyMsg{svc: id, stats: st, err: err}
 	}
 }
 
@@ -393,6 +411,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if b := m.store.Object(msg.bucket); msg.bucket != "" && b != nil {
 				b.Objects, b.ListErr, b.Loaded = msg.objs, msg.err, true
+			}
+			for _, s := range m.store.Services {
+				if msg.svc != "" && s.Info.ID == msg.svc {
+					// the details screen shows the error in its place
+					s.Stats, s.StatsErr = msg.stats, msg.err
+					msg.err = nil
+				}
 			}
 			m.rebuildRows()
 			if m.scr == scrDetails {

@@ -7,6 +7,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/nats-io/nats.go/micro"
+
 	"github.com/olgeni/nats-tui/cli"
 	"github.com/olgeni/nats-tui/internal/testnats"
 )
@@ -626,5 +628,60 @@ func TestConsumerFromMessages(t *testing.T) {
 	press(m, "enter", "ctrl+s")
 	if v := m.View(); m.scr != scrPlan || !strings.Contains(v, "consumer add ORDERS newonly") || !strings.Contains(v, "--filter=orders.new") {
 		t.Fatalf("plan:\n%s", v)
+	}
+}
+
+func TestServiceDetailsShowStats(t *testing.T) {
+	m, _ := testModel(t)
+	nc := m.client.NC
+	svc, err := micro.AddService(nc, micro.Config{
+		Name:        "echo",
+		Version:     "1.2.3",
+		Description: "answers what it is asked",
+		Endpoint: &micro.EndpointConfig{
+			Subject: "echo.req",
+			Handler: micro.HandlerFunc(func(r micro.Request) { r.Respond(r.Data()) }),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer svc.Stop()
+	if _, err := nc.Request("echo.req", []byte("hi"), 2*time.Second); err != nil {
+		t.Fatal(err)
+	}
+	// discovery runs on load: the service was not there the first time
+	st, err := m.client.LoadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.Update(loadedMsg{store: st})
+	m.cursor = -1
+	for i, n := range m.rows {
+		if n.kind == kService {
+			m.cursor = i
+		}
+	}
+	if m.cursor < 0 {
+		t.Fatalf("no service row:\n%s", m.View())
+	}
+	cmd := press(m, "enter")
+	if m.scr != scrDetails || cmd == nil {
+		t.Fatalf("details: %v cmd %v", m.scr, cmd != nil)
+	}
+	if v := m.View(); !strings.Contains(v, "asking the instance") {
+		t.Errorf("before the stats arrive:\n%s", v)
+	}
+	runCmd(t, m, cmd)
+	v := m.View()
+	for _, want := range []string{"echo", "1.2.3", "echo.req", "Statistics", "Started", "1 requests, 0 errors"} {
+		if !strings.Contains(v, want) {
+			t.Errorf("details miss %q:\n%s", want, v)
+		}
+	}
+	// the answer is kept: opening the details again asks nothing
+	press(m, "esc")
+	if cmd := press(m, "enter"); cmd != nil {
+		t.Error("stats asked twice")
 	}
 }

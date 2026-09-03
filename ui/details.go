@@ -717,11 +717,19 @@ func (m *Model) serviceDetail(d *detailWriter, s *cli.Service) {
 		}
 		d.row(e.Name, v)
 	}
-	if s.Stats != nil {
-		d.section("Statistics")
+	d.section("Statistics")
+	switch {
+	case s.StatsErr != nil:
+		d.warn("Error", s.StatsErr.Error())
+	case s.Stats == nil:
+		d.row("", "asking the instance…")
+	default:
 		d.row("Started", cli.Date(s.Stats.Started))
 		for _, e := range s.Stats.Endpoints {
 			d.row(e.Name, fmt.Sprintf("%d requests, %d errors, avg %s", e.NumRequests, e.NumErrors, e.AverageProcessingTime))
+			if e.LastError != "" {
+				d.warn("  last error", e.LastError)
+			}
 		}
 	}
 }

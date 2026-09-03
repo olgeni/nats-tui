@@ -581,6 +581,9 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.ensureConsumers(n.stream, func(m *Model) tea.Cmd { m.showDetails(n, scrMain); return nil })
 		case kObject:
 			return m, m.ensureObjects(n.obj, func(m *Model) tea.Cmd { m.showDetails(n, scrMain); return nil })
+		case kService:
+			m.showDetails(n, scrMain)
+			return m, m.serviceStats(n.svc)
 		}
 		m.showDetails(n, scrMain)
 	case "J":

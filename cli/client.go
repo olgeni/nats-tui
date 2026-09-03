@@ -242,8 +242,11 @@ func (b *ObjectBucket) Name() string { return b.Status.Bucket() }
 
 // Service is one instance of a micro service found by discovery.
 type Service struct {
-	Info  micro.Info
-	Stats *micro.Stats
+	Info micro.Info
+	// Stats are asked from the instance when its details open; StatsErr
+	// is why they are missing.
+	Stats    *micro.Stats
+	StatsErr error
 }
 
 // Stream finds a stream by name.
