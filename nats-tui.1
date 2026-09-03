@@ -75,6 +75,13 @@ Credentials file, overriding the context.
 .It Fl timeout Ar duration
 Time to wait on responses
 .Pq default 5s .
+.It Fl refresh Ar duration
+Re-read the server every
+.Ar duration
+.Pq like 5s
+on the main screen, the details and the tables;
+.Ic ctrl+r
+toggles it at runtime.
 .It Fl nats Ar path
 The
 .Nm nats
@@ -121,7 +128,9 @@ jumps to a sequence,
 .Ic f
 keeps a subject,
 .Ic d
-deletes a message.
+deletes a message,
+.Ic a
+adds a consumer filtered on the subject shown.
 On a bucket the keys, on an object store the objects.
 .It Ic t
 Subjects held in a stream with their message counts.
@@ -169,6 +178,12 @@ Seal a stream or an object store (irreversible).
 Toggle the mouse.
 .It Ic r
 Re-read the server.
+The consumers of a stream and the objects of an object store are fetched
+when the stream is expanded or the store opened, and kept across reloads.
+.It Ic ctrl+r
+Turn the automatic reload on or off: every 5 seconds, or the
+.Fl refresh
+interval.
 .It Ic h ?
 Key map, help.
 .It Ic q

@@ -23,6 +23,7 @@ nats-tui                                         # nats's selected context
 nats-tui -context prod                           # a named context (nats --context)
 nats-tui -s nats://localhost:4222                # a server, no context
 nats-tui -mouse                                  # with mouse support (m toggles it at runtime)
+nats-tui -refresh 5s                             # re-read the server every 5s (ctrl+r toggles it)
 nats-tui -json | jq '.streams[].config.name'     # non-interactive dump; -tree for a text listing
 go test ./...                                    # unit tests + server-backed tests (skipped without nats-server)
 man ./nats-tui.1                                 # manual page
@@ -64,10 +65,16 @@ the JetStream usage of the account and the credentials in use.
 | `y`                                | copy a stream's configuration to a new stream, which needs subjects of its own                                                                                                                                   |
 | `x`                                | seal a stream or an object store (irreversible)                                                                                                                                                                  |
 | `m`                                | toggle the mouse (or start with `-mouse`): click a row to select it, click it again to open it, wheel scrolls; in editors a click focuses a field, a second click edits or toggles it; hold shift to select text |
+| `ctrl+r`                           | auto-refresh: re-read the server every 5 seconds, or the `-refresh` interval, on the main screen, the details and the tables                                                                                     |
 | `r`                                | re-read the server                                                                                                                                                                                               |
 | `h` / `?`                          | key map / help, `q` quit                                                                                                                                                                                         |
 
 ![details of a stream](doc/details.png)
+
+The consumers of a stream and the objects of a store are fetched when the
+stream is expanded or the store opened, one request each, and kept across
+reloads, so a server with hundreds of streams opens in the time of one
+stream list. The counts shown before that come from the stream state.
 
 Sealed streams and paused consumers are shown in yellow; consumers are
 muted under their stream.
@@ -129,7 +136,8 @@ the server would refuse. A few `nats` details the plans know:
 
 `v` on a stream reads a page of its messages (an ordered consumer, no state
 on the server); `enter` shows one with its headers, JSON indented and
-binary hex-dumped. `s` subscribes to subjects and shows what arrives, `w`
+binary hex-dumped. `a` adds a consumer filtered on the subject shown, from
+the messages table or the subjects table. `s` subscribes to subjects and shows what arrives, `w`
 watches a bucket (every change with its revision, current values first) or
 an object store, `E` follows the JetStream advisories, metrics and server
 events. New entries are followed unless you scroll back; `end` follows
