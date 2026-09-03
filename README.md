@@ -12,6 +12,8 @@ of the server. Messages are published, requested and watched live from the
 same screens. Nothing is ever changed except through `nats` itself, so the
 preview is exactly what you could type in a shell.
 
+![main screen](doc/main.png)
+
 It is the sibling of [nsc-tui](https://github.com/olgeni/nsc-tui), which does
 the same for `nsc`, and shares its look and keys.
 
@@ -65,6 +67,8 @@ the JetStream usage of the account and the credentials in use.
 | `r`                                | re-read the server                                                                                                                                                                                               |
 | `h` / `?`                          | key map / help, `q` quit                                                                                                                                                                                         |
 
+![details of a stream](doc/details.png)
+
 Sealed streams and paused consumers are shown in yellow; consumers are
 muted under their stream.
 
@@ -78,12 +82,16 @@ written `key=value`. Limits are `-1` for unlimited; sizes take `k`/`m`/`g`/`t`
 (decimal) or `kib`/`mib`/`gib`; durations are `30s`, `5m`, `2h`, `1d`,
 `1w`, `1y`, blank for none.
 
+![the stream editor](doc/editor.png)
+
 Only what changed is passed to `nats`, and the preview shows the commands:
 
 ```
 [1/1] apply the changes (nats shows the difference it applied)
       nats --context prod stream edit ORDERS --max-msgs=500 --deny-purge -f
 ```
+
+![the plan preview](doc/plan.png)
 
 `nats stream edit` and `nats consumer edit` print the difference they
 applied, which the result screen shows. Some settings are fixed at creation
@@ -129,6 +137,10 @@ again, `/` filters by subject or body, `c` clears, `enter` opens an entry,
 `p` publishes to its subject, `esc` stops the subscription. The last 5000
 entries are kept.
 
+![the messages of a stream](doc/messages.png)
+
+![a live subscription](doc/live.png)
+
 A message can also be scheduled instead of sent: the publish editor takes a
 schedule (once at an RFC3339 time, once after a delay, every interval, or on
 a cron line), the subject it is published to when the schedule fires, an
@@ -137,6 +149,8 @@ a TTL for the fired messages. The stream holding the publish subject must
 allow message schedules, a stream option that, like per-message TTL, cannot
 be turned off once on. One schedule lives on each subject: a new one
 replaces it.
+
+![the keys of a bucket](doc/keys.png)
 
 Subscriptions run in the client library over the same connection; what
 `nats sub` would print is what the screen shows, without parsing it.
