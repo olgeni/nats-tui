@@ -1,0 +1,215 @@
+.Dd September 3, 2026
+.Dt NATS-TUI 1
+.Os
+.Sh NAME
+.Nm nats-tui
+.Nd terminal front-end to nats, the NATS command-line tool
+.Sh SYNOPSIS
+.Nm
+.Op Fl mouse
+.Op Fl context Ar name
+.Op Fl s Ar url
+.Op Fl creds Ar file
+.Op Fl timeout Ar duration
+.Op Fl nats Ar path
+.Nm
+.Fl json | Fl tree
+.Op Ar connection flags
+.Nm
+.Fl version
+.Sh DESCRIPTION
+.Nm
+shows the server a
+.Xr nats 1
+context points at as a tree: its JetStream streams with their consumers,
+its key-value buckets, its object stores and the micro services answering
+discovery.
+Every change is turned into a plan of
+.Nm nats
+commands that is previewed and only run after confirmation; the server is
+re-read afterwards.
+Nothing is changed except through
+.Nm nats
+itself.
+.Pp
+Reading is done with the NATS client library over the same context, so the
+screen and the commands see the same server; the live screens (subscribe,
+watch, events) stream from it too.
+Messages are published and requested through
+.Ql nats pub
+and
+.Ql nats request ,
+and their output is shown.
+.Pp
+The options are the connection flags of
+.Nm nats
+and are passed to every command it runs; without them the selected context
+and the environment of
+.Nm nats
+apply.
+.Bl -tag -width Ds
+.It Fl mouse
+Enable mouse support: click a row to select it, click it again to open it,
+the wheel scrolls; in editors a click focuses a field and a second click
+edits or toggles it.
+.Ic m
+toggles it at runtime; hold shift to select text while it is on.
+.It Fl json
+Do not start the TUI: print the context, the connection, the JetStream
+account, the streams with their consumers, the buckets, the object stores
+with their objects and the services as one JSON document and exit.
+.It Fl tree
+Like
+.Fl json ,
+as an indented text listing.
+.It Fl context Ar name
+The
+.Nm nats
+context to use
+.Pq default: the selected one, or Ev NATS_CONTEXT .
+.It Fl s Ar url
+Server URL(s), overriding the context
+.Pq Nm nats Fl s .
+.It Fl creds Ar file
+Credentials file, overriding the context.
+.It Fl timeout Ar duration
+Time to wait on responses
+.Pq default 5s .
+.It Fl nats Ar path
+The
+.Nm nats
+binary to run
+.Pq default: Nm nats No in Ev PATH .
+.It Fl version
+Print the version and exit.
+.El
+.Sh MAIN SCREEN
+.Bl -tag -width "right/left/space/*" -compact
+.It Ic up/down j/k pgup/pgdn home/end
+Move.
+.It Ic right/left/space/*
+Expand or collapse a stream or a section
+.Pq Ic * : all .
+.It Ic /
+Filter by name, subject or description;
+.Ic esc
+clears.
+.It Ic enter
+Details of the entity;
+.Ic J
+shows its raw JSON.
+.It Ic e
+Edit the stream, consumer, bucket, object store or context.
+.It Ic a
+Add what the row holds: a consumer on a stream, a key on a bucket, a file on
+an object store, a bucket or store on their section, a stream elsewhere.
+.Ic A
+adds a stream.
+.It Ic d
+Delete the stream, consumer, bucket or object store.
+.It Ic p
+Purge a stream: everything, one subject, up to a sequence, or all but the
+last few.
+.It Ic v
+Messages of a stream, one page at a time;
+.Ic [
+and
+.Ic ]
+page,
+.Ic g
+jumps to a sequence,
+.Ic f
+keeps a subject,
+.Ic d
+deletes a message.
+On a bucket the keys, on an object store the objects.
+.It Ic t
+Subjects held in a stream with their message counts.
+.It Ic n
+Fetch the next messages of a pull consumer
+.Pq Ql nats consumer next ,
+acknowledged, negatively acknowledged, terminated or left alone.
+.It Ic u
+Pause or resume a consumer.
+.It Ic K O
+Keys of a bucket, objects of an object store: put, get, delete, history,
+revert, watch.
+.It Ic s
+Subscribe live to a stream's subjects or to typed ones.
+.It Ic P R
+Publish a message; send a request and show the reply.
+.It Ic w
+Watch a bucket or an object store live.
+.It Ic E
+Events: JetStream advisories and metrics, server events.
+.It Ic I
+Account information.
+.It Ic M
+Monitoring: server list, info, reports, ping, checks, rtt.
+The server commands need a system account context.
+.It Ic T
+Reports: stream, consumer, account statistics, stream find.
+.It Ic C
+Contexts: list, use, select, add, edit, copy, delete, validate.
+.It Ic S
+Use another context; every command then carries
+.Fl -context .
+.It Ic b B
+Backup a stream to a directory; restore a backup.
+.It Ic y
+Copy a stream's configuration to a new stream.
+.It Ic x
+Seal a stream or an object store (irreversible).
+.It Ic m
+Toggle the mouse.
+.It Ic r
+Re-read the server.
+.It Ic h ?
+Key map, help.
+.It Ic q
+Quit.
+.El
+.Sh EDITORS
+Fields are moved with
+.Ic up/down
+or
+.Ic tab ;
+.Ic enter
+edits a text field in place
+.Pq Ic enter No keeps, Ic esc No reverts ,
+.Ic space
+toggles a checkbox,
+.Ic left/right
+picks a choice,
+.Ic ctrl+s
+is OK.
+Lists are comma-separated; metadata is written
+.Dq key=value .
+Limits are -1 for unlimited; sizes take k/m/g/t; durations are 30s, 5m,
+2h, 1d, 1w, 1y and blank for none.
+Only what changed is passed to
+.Nm nats ,
+which prints the difference it applied.
+Settings fixed at creation (a stream's storage, a consumer's mode and
+policies) are left alone and mentioned in a note.
+.Sh LIVE SCREENS
+New entries are followed unless you scroll back;
+.Ic end
+follows again,
+.Ic /
+filters by subject or body,
+.Ic c
+clears,
+.Ic enter
+opens an entry,
+.Ic P
+publishes to its subject and
+.Ic esc
+stops the subscription.
+The last 5000 entries are kept.
+.Sh EXIT STATUS
+.Ex -std
+.Sh SEE ALSO
+.Xr nats 1 ,
+.Xr nats-server 1 ,
+.Xr nsc-tui 1
