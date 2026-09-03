@@ -412,15 +412,15 @@ func RestoreStream(dir string) *Plan {
 }
 
 // CopyStream creates a stream with the configuration of another. The
-// copy needs subjects of its own: the server refuses two streams whose
-// subjects overlap.
+// copy needs subjects of its own, as two streams cannot share a
+// subject; only a source without subjects (a mirror) is copied as is.
 func CopyStream(from, to string, subjects []string) *Plan {
 	p := &Plan{Title: "Copy stream " + from + " to " + to}
 	args := []string{"stream", "copy", from, to}
 	if len(subjects) > 0 {
 		args = append(args, "--subjects="+strings.Join(subjects, ","))
 	} else {
-		p.Note("the copy keeps the subjects of the source, which the server refuses while they overlap: give it subjects of its own")
+		p.Note("the copy keeps the subjects of the source, if any: the server refuses it when they overlap")
 	}
 	p.Add("create the stream from the configuration of the source (no data)", args...)
 	return p

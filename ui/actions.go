@@ -1198,9 +1198,14 @@ func (m *Model) copyStream(st *cli.Stream) tea.Cmd {
 			}
 			return nil
 		}),
-		listField("subjects", "Subjects", nil, "the copy needs subjects of its own: the server refuses two streams whose subjects overlap"),
+		listField("subjects", "Subjects", nil, "the copy needs subjects of its own: two streams cannot share a subject, and the source holds "+cli.JoinList(st.Info.Config.Subjects)),
 	}
 	return m.openEditor(newEditor("Copy stream "+st.Name(), fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
-		return m.runPlan(cli.CopyStream(st.Name(), ed.str("name"), ed.list("subjects")), nil)
+		subjects := ed.list("subjects")
+		if len(subjects) == 0 && len(st.Info.Config.Subjects) > 0 {
+			m.setError("the copy needs subjects of its own: the server refuses a second stream on " + cli.JoinList(st.Info.Config.Subjects))
+			return nil
+		}
+		return m.runPlan(cli.CopyStream(st.Name(), ed.str("name"), subjects), nil)
 	})
 }

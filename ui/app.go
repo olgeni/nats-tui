@@ -488,7 +488,15 @@ func (m *Model) updateEditor(msg tea.Msg) (tea.Model, tea.Cmd) {
 		ed, done := m.editor, m.onEdit
 		m.scr = m.editBak
 		if done != nil {
-			return m, done(m, ed)
+			m.errMsg = ""
+			cmd := done(m, ed)
+			if m.errMsg != "" && m.scr == m.editBak {
+				// the handler refused the input: stay in the editor with
+				// what was typed, the error shown underneath
+				ed.errMsg = m.errMsg
+				m.scr = scrEditor
+			}
+			return m, cmd
 		}
 	}
 	return m, nil

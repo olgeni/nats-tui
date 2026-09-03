@@ -464,3 +464,27 @@ func TestValidSchedule(t *testing.T) {
 		}
 	}
 }
+
+func TestCopyStreamNeedsSubjects(t *testing.T) {
+	m, _ := testModel(t)
+	press(m, "down", "down", "y")
+	if m.scr != scrEditor || m.editor.get("name").text != "ORDERS_COPY" {
+		t.Fatalf("copy editor: scr %v", m.scr)
+	}
+	press(m, "ctrl+s")
+	if m.scr != scrEditor || !strings.Contains(m.errMsg, "subjects of its own") {
+		t.Fatalf("blank subjects accepted: scr %v err %q", m.scr, m.errMsg)
+	}
+	ed := m.editor
+	for ed.row().key != "subjects" {
+		ed.move(1)
+	}
+	press(m, "enter")
+	for _, r := range "orders2.>" {
+		press(m, string(r))
+	}
+	press(m, "enter", "ctrl+s")
+	if v := m.View(); m.scr != scrPlan || !strings.Contains(v, "stream copy ORDERS ORDERS_COPY") || !strings.Contains(v, "--subjects=orders2.>") {
+		t.Fatalf("copy plan:\n%s", m.View())
+	}
+}
