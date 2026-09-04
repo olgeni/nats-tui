@@ -17,6 +17,7 @@ func (m *Model) showDetails(n node, back screen) {
 	m.detail, m.rawJSON, m.detailBk = n, false, back
 	m.vp.SetContent(m.detailText())
 	m.vp.GotoTop()
+	m.vp.SetXOffset(0)
 	m.scr = scrDetails
 }
 
@@ -25,6 +26,7 @@ func (m *Model) showJSON(n node) {
 	m.detail, m.rawJSON, m.detailBk = n, true, m.scr
 	m.vp.SetContent(m.detailText())
 	m.vp.GotoTop()
+	m.vp.SetXOffset(0)
 	m.scr = scrDetails
 }
 
@@ -47,7 +49,7 @@ func (m *Model) detailsView() string {
 	case kContext:
 		help = helpLine("e", "edit the context", "C", "contexts", "I", "account", "J", "json", "esc", "back")
 	default:
-		help = helpLine("J", "json/details", "esc", "back", "↑↓", "scroll")
+		help = helpLine("J", "json/details", "esc", "back", "↑↓ ←→", "scroll")
 	}
 	return m.frame(title, m.vp.View(), help)
 }
@@ -63,6 +65,7 @@ func (m *Model) updateDetails(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.rawJSON = !m.rawJSON
 			m.vp.SetContent(m.detailText())
 			m.vp.GotoTop()
+			m.vp.SetXOffset(0)
 			return m, nil
 		case "e":
 			return m, m.editEntity(n)

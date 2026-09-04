@@ -323,10 +323,11 @@ func (m *Model) updateLive(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "?", "f1":
 		m.vp.SetContent(helpText)
 		m.vp.GotoTop()
+		m.vp.SetXOffset(0)
 		m.prevScr, m.scr = scrLive, scrHelp
 	case "enter":
 		if e := l.selected(); e != nil {
-			m.showText(eventTitle(*e), eventText(*e, m.width), helpLine("esc", "back to the live view", "↑↓", "scroll"))
+			m.showText(eventTitle(*e), eventText(*e, m.width), helpLine("esc", "back to the live view", "↑↓ ←→", "scroll"))
 		}
 	case "p":
 		subject := ""

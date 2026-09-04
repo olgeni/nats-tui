@@ -496,10 +496,12 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "?", "f1":
 		m.vp.SetContent(helpText)
 		m.vp.GotoTop()
+		m.vp.SetXOffset(0)
 		m.prevScr, m.scr = scrMain, scrHelp
 	case "h":
 		m.vp.SetContent(keymapView(m.width))
 		m.vp.GotoTop()
+		m.vp.SetXOffset(0)
 		m.prevScr, m.scr = scrMain, scrKeys
 	case "up", "k":
 		m.cursor--
@@ -778,6 +780,7 @@ func (m *Model) updateEmpty(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "?", "f1":
 		m.vp.SetContent(helpText)
 		m.vp.GotoTop()
+		m.vp.SetXOffset(0)
 		m.prevScr, m.scr = scrMain, scrHelp
 	case "r", "enter":
 		return m, m.busyReload()

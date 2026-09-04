@@ -834,3 +834,27 @@ func TestClusterMenuResetsConsumer(t *testing.T) {
 		t.Fatalf("kick editor: %v %q", m.scr, m.editor.get("server").text)
 	}
 }
+
+func TestTextScrollsSideways(t *testing.T) {
+	m := New(cli.Settings{})
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	// the marker sits at column 100: off screen until the text scrolls right
+	m.showText("wide", "short\n"+strings.Repeat(" ", 100)+"MARK\nshort", "")
+	if strings.Contains(m.View(), "MARK") {
+		t.Fatalf("the marker should start off screen:\n%s", m.View())
+	}
+	press(m, "right", "right")
+	if v := m.View(); !strings.Contains(v, "MARK") || !strings.Contains(v, "←→") {
+		t.Errorf("after right:\n%s", v)
+	}
+	press(m, "left")
+	if strings.Contains(m.View(), "MARK") {
+		t.Errorf("after left:\n%s", m.View())
+	}
+	// a new text starts at the left edge again
+	press(m, "right", "right", "right")
+	m.showText("other", strings.Repeat(" ", 100)+"MARK", "")
+	if strings.Contains(m.View(), "MARK") {
+		t.Errorf("new text:\n%s", m.View())
+	}
+}

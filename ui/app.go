@@ -145,8 +145,15 @@ type Model struct {
 
 // New returns the root model.
 func New(s cli.Settings) *Model {
-	return &Model{settings: s, runner: cli.Exec{Settings: s}, width: 80, height: 24, expanded: map[string]bool{}, now: time.Now()}
+	m := &Model{settings: s, runner: cli.Exec{Settings: s}, width: 80, height: 24, expanded: map[string]bool{}, now: time.Now()}
+	// ←/→ scroll the text screens sideways: a report or a message body can
+	// be wider than the terminal
+	m.vp.SetHorizontalStep(horizontalStep)
+	return m
 }
+
+// horizontalStep is how many columns ←/→ move a text screen.
+const horizontalStep = 20
 
 func (m *Model) Init() tea.Cmd { return tea.Batch(m.load(), m.scheduleRefresh()) }
 
@@ -313,10 +320,11 @@ func (m *Model) openEditor(ed *editor, onOK func(m *Model, ed *editor) tea.Cmd) 
 func (m *Model) showText(title, text, help string) {
 	m.vpTitle, m.vpHelp = title, help
 	if help == "" {
-		m.vpHelp = helpLine("esc/q", "back", "↑↓", "scroll")
+		m.vpHelp = helpLine("esc/q", "back", "↑↓ ←→", "scroll")
 	}
 	m.vp.SetContent(text)
 	m.vp.GotoTop()
+	m.vp.SetXOffset(0)
 	if m.scr != scrText {
 		m.textBack = m.scr
 	}
@@ -345,6 +353,7 @@ func (m *Model) runPlan(p *cli.Plan, after func(m *Model) tea.Cmd) tea.Cmd {
 	m.plan, m.planAfter = p, after
 	m.vp.SetContent(m.planText())
 	m.vp.GotoTop()
+	m.vp.SetXOffset(0)
 	m.scr = scrPlan
 	return nil
 }
@@ -492,6 +501,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.results = msg.results
 		m.vp.SetContent(m.resultText())
 		m.vp.GotoTop()
+		m.vp.SetXOffset(0)
 		m.scr = scrResult
 		if !cli.Failed(msg.results) && msg.after != nil {
 			m.planAfter = msg.after
@@ -813,12 +823,12 @@ func (m *Model) View() string {
 	case scrPicker:
 		return m.pk.View()
 	case scrPlan:
-		help := helpLine("enter/y", "run", "esc/n", "back", "↑↓", "scroll")
+		help := helpLine("enter/y", "run", "esc/n", "back", "↑↓ ←→", "scroll")
 		return m.frame("Preview — "+m.plan.Title, m.vp.View(), help)
 	case scrResult:
-		return m.frame("Result — "+m.plan.Title, m.vp.View(), helpLine("enter/esc", "back (re-reads the server)", "↑↓", "scroll"))
+		return m.frame("Result — "+m.plan.Title, m.vp.View(), helpLine("enter/esc", "back (re-reads the server)", "↑↓ ←→", "scroll"))
 	case scrHelp:
-		return m.frame("Help", m.vp.View(), helpLine("esc/q", "back", "↑↓", "scroll"))
+		return m.frame("Help", m.vp.View(), helpLine("esc/q", "back", "↑↓ ←→", "scroll"))
 	case scrKeys:
 		return m.frame("Keys", m.vp.View(), helpLine("esc/h", "back", "?", "full help"))
 	case scrText:

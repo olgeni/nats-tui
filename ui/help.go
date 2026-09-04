@@ -216,8 +216,9 @@ var keymapSections = []struct {
 		{"p", "publish"},
 		{"esc", "stop"},
 	}},
-	{"Tables", []keyDesc{
-		{"↑/↓", "move"},
+	{"Tables and text", []keyDesc{
+		{"↑/↓", "move / scroll"},
+		{"←/→", "scroll wide text"},
 		{"enter", "open / use"},
 		{"a e d", "add / edit / delete"},
 		{"r", "reload"},

@@ -273,6 +273,7 @@ func (m *Model) updateTable(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "?", "f1":
 		m.vp.SetContent(helpText)
 		m.vp.GotoTop()
+		m.vp.SetXOffset(0)
 		m.prevScr, m.scr = scrTable, scrHelp
 	case "r":
 		return m, m.refreshTable()
@@ -562,7 +563,7 @@ func (m *Model) messageKeys(key string) tea.Cmd {
 	switch key {
 	case "enter":
 		if msg != nil {
-			m.showText(fmt.Sprintf("Message %d of %s", msg.Seq, t.stream), messageText(*msg, m.width), helpLine("esc", "back", "↑↓", "scroll"))
+			m.showText(fmt.Sprintf("Message %d of %s", msg.Seq, t.stream), messageText(*msg, m.width), helpLine("esc", "back", "↑↓ ←→", "scroll"))
 		}
 	case "[", "pgup":
 		if key == "pgup" && t.cursor > 0 {
@@ -780,7 +781,7 @@ func (m *Model) kvKeys(key string) tea.Cmd {
 	switch key {
 	case "enter":
 		if e != nil {
-			m.showText(fmt.Sprintf("%s > %s (revision %d)", t.bucket, e.Key, e.Revision), kvText(*e, m.width), helpLine("esc", "back", "↑↓", "scroll"))
+			m.showText(fmt.Sprintf("%s > %s (revision %d)", t.bucket, e.Key, e.Revision), kvText(*e, m.width), helpLine("esc", "back", "↑↓ ←→", "scroll"))
 		}
 	case "a":
 		return m.putKey(t.bucket, "", "", 0)
@@ -920,7 +921,7 @@ func (m *Model) historyKeys(key string) tea.Cmd {
 	switch key {
 	case "enter":
 		if e != nil {
-			m.showText(fmt.Sprintf("%s > %s (revision %d)", t.bucket, e.Key, e.Revision), kvText(*e, m.width), helpLine("esc", "back", "↑↓", "scroll"))
+			m.showText(fmt.Sprintf("%s > %s (revision %d)", t.bucket, e.Key, e.Revision), kvText(*e, m.width), helpLine("esc", "back", "↑↓ ←→", "scroll"))
 		}
 	case "R":
 		if e != nil {
@@ -973,7 +974,7 @@ func (m *Model) objectKeys(key string) tea.Cmd {
 	switch key {
 	case "enter":
 		if o != nil {
-			m.showText("Object "+o.Name+" in "+t.bucket, objectText(o, m.width), helpLine("esc", "back", "↑↓", "scroll"))
+			m.showText("Object "+o.Name+" in "+t.bucket, objectText(o, m.width), helpLine("esc", "back", "↑↓ ←→", "scroll"))
 		}
 	case "a":
 		return m.putObject(t.bucket)
