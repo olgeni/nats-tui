@@ -338,6 +338,20 @@ func TestMessagesAndKeysTables(t *testing.T) {
 	if m.scr != scrTable || len(m.tbl.rows) != 2 {
 		t.Errorf("after put: %v rows %d", m.scr, len(m.tbl.rows))
 	}
+	// editing an existing key carries the revision it was read at
+	press(m, "e")
+	if m.scr != scrEditor {
+		t.Fatalf("edit key: %v", m.scr)
+	}
+	press(m, "ctrl+s")
+	if m.scr != scrPlan || !strings.Contains(m.View(), "kv update CONFIG app.env prod 2") {
+		t.Fatalf("update plan:\n%s", m.View())
+	}
+	runCmd(t, m, press(m, "enter"))
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrTable || len(m.tbl.rows) != 2 || !strings.Contains(m.View(), " 3 ") {
+		t.Errorf("after update: %v rows %d\n%s", m.scr, len(m.tbl.rows), m.View())
+	}
 	runCmd(t, m, press(m, "h"))
 	if m.scr != scrTable || m.tbl.kind != tkHistory {
 		t.Errorf("history: %v", m.scr)

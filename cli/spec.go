@@ -907,6 +907,16 @@ func PutKey(bucket, key, value string) *Plan {
 	return p
 }
 
+// UpdateKey writes a value only when the key is still at the revision
+// that was read (nats kv update): a write that happened in between makes
+// the server refuse it instead of being overwritten. The value is an
+// argument, as nats kv update does not read stdin.
+func UpdateKey(bucket, key, value string, rev uint64) *Plan {
+	p := &Plan{Title: fmt.Sprintf("Update %s in %s", key, bucket)}
+	p.Add(fmt.Sprintf("write the value if the key is still at revision %d", rev), "kv", "update", bucket, key, value, fmt.Sprint(rev))
+	return p
+}
+
 // CreateKey writes a value only when the key is new.
 func CreateKey(bucket, key, value, ttl string) *Plan {
 	p := &Plan{Title: fmt.Sprintf("Create %s in %s", key, bucket)}

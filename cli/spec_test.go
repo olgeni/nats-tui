@@ -137,6 +137,9 @@ func TestBucketPlans(t *testing.T) {
 	if put.Cmds[0].Stdin != "line1\nline2" || strings.Join(put.Cmds[0].Args, " ") != "kv put CONFIG a.b" {
 		t.Errorf("put: %v", put.Cmds[0])
 	}
+	if a := strings.Join(UpdateKey("CONFIG", "a.b", "v2", 7).Cmds[0].Args, " "); a != "kv update CONFIG a.b v2 7" {
+		t.Errorf("update: %s", a)
+	}
 	o := NewObjectSpec()
 	o.Name, o.TTL, o.Compress = "FILES", "7d", true
 	a = strings.Join(AddObjectStore(o).Cmds[0].Args, " ")

@@ -783,10 +783,10 @@ func (m *Model) kvKeys(key string) tea.Cmd {
 			m.showText(fmt.Sprintf("%s > %s (revision %d)", t.bucket, e.Key, e.Revision), kvText(*e, m.width), helpLine("esc", "back", "↑↓", "scroll"))
 		}
 	case "a":
-		return m.putKey(t.bucket, "", "")
+		return m.putKey(t.bucket, "", "", 0)
 	case "e":
 		if e != nil {
-			return m.putKey(t.bucket, e.Key, string(e.Value))
+			return m.putKey(t.bucket, e.Key, string(e.Value), e.Revision)
 		}
 	case "h":
 		if e != nil {
@@ -820,27 +820,36 @@ func kvText(e cli.KVEntry, width int) string {
 	return d.String() + bodyText(e.Value)
 }
 
-// putKey asks for a key and a value and writes them.
-func (m *Model) putKey(bucket, key, value string) tea.Cmd {
+// putKey asks for a key and a value and writes them. An existing key comes
+// with the revision it was read at, so the write can be refused when
+// someone changed it in between (nats kv update).
+func (m *Model) putKey(bucket, key, value string, rev uint64) tea.Cmd {
 	title := "Put a key in " + bucket
 	fields := []*field{section("Key-value")}
 	if key != "" {
 		title = "Edit " + key + " in " + bucket
-		fields = append(fields, infoField("Key", key))
+		fields = append(fields, infoField("Key", key), infoField("Revision", fmt.Sprint(rev)))
 	} else {
 		fields = append(fields, textField("key", "Key", "", "letters, digits, - _ = . and / (dots separate levels)", "required", validKey))
 	}
-	fields = append(fields,
-		textField("value", "Value", value, "any text; it is piped to nats kv put, so nothing is interpreted", "(empty)", nil),
-		boolField("create", "Only if the key does not exist yet (nats kv create)", false, ""),
-		textField("ttl", "TTL", "", "with create only: how long the key lives (needs per-key TTLs on the bucket)", "(none)", cli.ValidDuration),
-	)
+	fields = append(fields, textField("value", "Value", value, "any text; it is piped to nats kv put, so nothing is interpreted", "(empty)", nil))
+	if key != "" {
+		fields = append(fields, boolField("cas", fmt.Sprintf("Only if the key is still at revision %d (nats kv update)", rev), true, "off: nats kv put overwrites whatever is there now"))
+	} else {
+		fields = append(fields,
+			boolField("create", "Only if the key does not exist yet (nats kv create)", false, ""),
+			textField("ttl", "TTL", "", "with create only: how long the key lives (needs per-key TTLs on the bucket)", "(none)", cli.ValidDuration),
+		)
+	}
 	return m.openEditor(newEditor(title, fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
-		k := key
-		if k == "" {
-			k = ed.str("key")
-		}
 		v := ed.get("value").text
+		if key != "" {
+			if ed.on("cas") {
+				return m.runPlan(cli.UpdateKey(bucket, key, v, rev), nil)
+			}
+			return m.runPlan(cli.PutKey(bucket, key, v), nil)
+		}
+		k := ed.str("key")
 		if ed.on("create") {
 			return m.runPlan(cli.CreateKey(bucket, k, v, ed.str("ttl")), nil)
 		}

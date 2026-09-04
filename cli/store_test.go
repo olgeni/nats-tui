@@ -278,6 +278,10 @@ func TestBucketsRoundTrip(t *testing.T) {
 	if res := cli.CreateKey("CONFIG", "only.once", "2", "").Execute(x, nil); !cli.Failed(res) {
 		t.Error("create on an existing key should fail")
 	}
+	run(t, x, cli.UpdateKey("CONFIG", "app.multi", "a\nb", 3))
+	if res := cli.UpdateKey("CONFIG", "app.multi", "stale", 3).Execute(x, nil); !cli.Failed(res) {
+		t.Error("update with an old revision should fail")
+	}
 	st, err := c.LoadAll()
 	if err != nil {
 		t.Fatal(err)
@@ -297,8 +301,8 @@ func TestBucketsRoundTrip(t *testing.T) {
 	if keys[1].Key != "app.name" || string(keys[1].Value) != "demo v2" || keys[1].Revision != 2 {
 		t.Errorf("key: %+v", keys[1])
 	}
-	if string(keys[0].Value) != "a\nb" {
-		t.Errorf("multi-line value: %q", keys[0].Value)
+	if string(keys[0].Value) != "a\nb" || keys[0].Revision != 5 {
+		t.Errorf("multi-line value after update: %q revision %d", keys[0].Value, keys[0].Revision)
 	}
 	hist, err := c.History("CONFIG", "app.name")
 	if err != nil || len(hist) != 2 || string(hist[0].Value) != "demo" {

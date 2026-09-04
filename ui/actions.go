@@ -53,7 +53,7 @@ func (m *Model) addChild(n node) tea.Cmd {
 	case kConsumer:
 		return m.addConsumer(n.cons.Stream)
 	case kKV:
-		return m.putKey(n.kv.Name(), "", "")
+		return m.putKey(n.kv.Name(), "", "", 0)
 	case kObject:
 		return m.putObject(n.obj.Name())
 	case kSection:
