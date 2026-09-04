@@ -144,6 +144,10 @@ Pause or resume a consumer.
 .It Ic K O
 Keys of a bucket, objects of an object store: put, get, delete, history,
 revert, watch.
+Editing a key runs
+.Ql nats kv update
+with the revision the key was read at, so a write that happened in between
+is refused.
 .It Ic s
 Subscribe live to a stream's subjects or to typed ones.
 .It Ic p R
@@ -159,20 +163,33 @@ Events: JetStream advisories and metrics, server events.
 .It Ic I
 Account information.
 .It Ic M
-Monitoring: server list, info, reports, ping, checks, rtt.
+Monitoring: server list, info, ping, the server reports (connections,
+jetstream, accounts, health, cpu, mem, routes, gateways, leafnodes,
+downgrade), the checks
+.Pq Ql nats server check
+of the selected stream, consumer or bucket and of the cluster, a server, a
+request or a credential, subject mappings, rtt, account info and tls.
 The server commands need a system account context.
 .It Ic T
-Reports: stream, consumer, account statistics, stream find.
+Reports: stream, consumer, account statistics, stream find, consumer find,
+stream gaps.
+.It Ic L
+Cluster: step down the leader of a stream, a consumer or the meta group,
+remove a peer, balance the leaders, reset or unpin a consumer, reload a
+server's configuration, kick a client, purge an account.
+The server commands need a system account context.
 .It Ic C
 Contexts: list, use, select, add, edit, copy, delete, validate.
 .It Ic S
 Use another context; every command then carries
 .Fl -context .
 .It Ic b B
-Backup a stream to a directory; restore a backup.
+Backup a stream to a directory, or, on a row without a stream, every stream
+of the account; restore a stream or an account backup.
 .It Ic y
 Copy a stream's configuration to a new stream, which needs subjects of its
 own: two streams cannot share a subject.
+On a consumer, copy the consumer.
 .It Ic x
 Seal a stream or an object store (irreversible).
 .It Ic m

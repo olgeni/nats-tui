@@ -28,20 +28,30 @@ Main screen
   t              subjects held in a stream, with their message counts
   n              next: pull messages from a pull consumer (nats consumer next)
   u              pause / resume a consumer
-  K / O          keys of a bucket / objects of an object store
+  K / O          keys of a bucket / objects of an object store (editing a
+                 key runs nats kv update with the revision it was read at)
   s              subscribe live: to a stream's subjects, or to what you type
   p              publish a message (nats pub)
   R              send a request and show the reply (nats request)
   w              watch a bucket or an object store live
   E              events: JetStream advisories and metrics, server events
   I              account information (JetStream usage and limits)
-  M              monitoring: server list, info, reports, ping, rtt (the
-                 server commands need a system account context)
-  T              reports: stream report, consumer report, account report
+  M              monitoring: server list, info, ping, the server reports,
+                 the checks (of the selected stream, consumer or bucket,
+                 and of the cluster, a server, a request, a credential),
+                 subject mappings, rtt, account info and tls (the server
+                 commands need a system account context)
+  T              reports: stream report, consumer report, account report,
+                 stream find, consumer find, stream gaps
+  L              cluster: leader step-down of a stream, a consumer or the
+                 meta group, peer removal, leader balancing, consumer reset
+                 and unpin, config reload, kick a client, purge an account
   C              contexts: list, use, select, add, edit, copy, delete, validate
   S              use another context (commands then carry --context)
-  b / B          backup a stream to a directory / restore a backup
-  y              copy a stream's configuration to a new stream
+  b / B          backup a stream (or, elsewhere, every stream of the
+                 account) to a directory / restore a stream or account backup
+  y              copy a stream's configuration to a new stream; on a
+                 consumer, copy the consumer
   x              seal a stream or an object store (irreversible)
   J              raw JSON of the selected entity
   m              toggle the mouse (also: nats-tui -mouse): click a row to select
@@ -111,10 +121,26 @@ Contexts
   existing name keeps what is not given), V validates one by connecting.
 
 Monitoring
-  M runs the server commands (nats server list, info, report connections /
-  jetstream / accounts, ping) and shows their output. They need the system
-  account: a context whose credentials belong to it. rtt and account info
-  work with any user. T runs the stream, consumer and account reports.
+  M runs the server commands (nats server list, info, ping, the reports:
+  connections, jetstream, accounts, health, cpu, mem, routes, gateways,
+  leafnodes, downgrade) and shows their output. They need the system
+  account: a context whose credentials belong to it. The menu opens with
+  nats server check of the selected stream, consumer or bucket, and offers
+  the other checks (jetstream, connection, meta, server, request,
+  credential) behind a small editor for their thresholds; a check that
+  warns or fails exits non-zero, and its report is shown all the same.
+  rtt, account info and account tls work with any user. T runs the stream,
+  consumer and account reports, stream find, consumer find and stream gaps.
+
+Cluster
+  L holds the commands that change the cluster rather than an entity, the
+  ones for the selected stream or consumer first: stream and consumer
+  cluster step-down and peer-remove, consumer reset (delivery starts again
+  from a sequence, or the outstanding messages are delivered again) and
+  unpin, stream and consumer cluster balance, server cluster step-down and
+  peer-remove, server config reload, server request kick and server
+  account purge. Each one is a plan, previewed and confirmed like the
+  others; the destructive ones are flagged.
 
 Connection flags
   nats-tui takes nats's own -context, -s, --creds and --timeout and passes
@@ -150,11 +176,12 @@ var keymapSections = []struct {
 		{"w", "watch bucket live"},
 		{"E", "events live"},
 		{"I", "account info"},
-		{"M", "monitoring"},
+		{"M", "monitoring / checks"},
 		{"T", "reports"},
+		{"L", "cluster"},
 		{"C / S", "contexts / switch"},
 		{"b / B", "backup / restore"},
-		{"y", "copy stream"},
+		{"y", "copy stream / consumer"},
 		{"x", "seal"},
 		{"J", "raw JSON"},
 		{"m", "toggle mouse"},
