@@ -34,7 +34,7 @@ type live struct {
 	cursor   int
 	offset   int
 	follow   bool
-	filter   string
+	filter   editLine
 	filterOn bool
 	width    int
 	height   int
@@ -54,7 +54,10 @@ type (
 )
 
 func newLive(title, desc, command string, src *cli.Live, width, height int) *live {
-	return &live{title: title, desc: desc, command: command, src: src, follow: true, width: width, height: height}
+	l := &live{title: title, desc: desc, command: command, src: src, follow: true, width: width, height: height}
+	l.filter = newEditLine("")
+	l.filter.Focus()
+	return l
 }
 
 func (l *live) setSize(w, h int) { l.width, l.height = w, h; l.clamp() }
@@ -96,7 +99,7 @@ func (l *live) add(evs []cli.Event) {
 }
 
 func (l *live) refilter() {
-	f := strings.ToLower(strings.TrimSpace(l.filter))
+	f := strings.ToLower(strings.TrimSpace(l.filter.Value()))
 	l.vis = l.vis[:0]
 	for i, e := range l.entries {
 		if f == "" || strings.Contains(strings.ToLower(e.Subject), f) || strings.Contains(strings.ToLower(string(e.Data)), f) || strings.Contains(strings.ToLower(e.Text), f) {
@@ -150,11 +153,9 @@ func (l *live) View() string {
 	} else {
 		state += " · paused (end resumes)"
 	}
-	if l.filter != "" || l.filterOn {
-		state += "   Filter: " + l.filter
-		if l.filterOn {
-			state += "▏"
-		} else {
+	if !l.filter.Empty() || l.filterOn {
+		state += "   Filter: " + l.filter.View()
+		if !l.filterOn {
 			state += fmt.Sprintf(" (%d shown)", len(l.vis))
 		}
 	}
@@ -268,18 +269,15 @@ func (m *Model) updateLive(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if l.filterOn {
 		switch k.String() {
 		case "esc":
-			l.filter, l.filterOn = "", false
+			l.filter.Set("")
+			l.filterOn = false
 			l.refilter()
 		case "enter":
 			l.filterOn = false
-		case "backspace":
-			if r := []rune(l.filter); len(r) > 0 {
-				l.filter = string(r[:len(r)-1])
-				l.refilter()
-			}
 		default:
-			if k.Type == tea.KeyRunes || k.Type == tea.KeySpace {
-				l.filter += k.String()
+			// every other key edits the filter, inside it as well as
+			// at its end
+			if l.filter.Update(k) {
 				l.refilter()
 			}
 		}

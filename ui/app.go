@@ -98,7 +98,7 @@ type Model struct {
 	cursor   int
 	offset   int
 	expanded map[string]bool
-	filter   string
+	filter   editLine
 	filterOn bool
 	tableTop int
 
@@ -146,6 +146,8 @@ type Model struct {
 // New returns the root model.
 func New(s cli.Settings) *Model {
 	m := &Model{settings: s, runner: cli.Exec{Settings: s}, width: 80, height: 24, expanded: map[string]bool{}, now: time.Now()}
+	m.filter = newEditLine("")
+	m.filter.Focus()
 	// ←/→ scroll the text screens sideways: a report or a message body can
 	// be wider than the terminal
 	m.vp.SetHorizontalStep(horizontalStep)

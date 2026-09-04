@@ -21,7 +21,7 @@ type picker struct {
 	title, desc string
 	help        string // footer; the default one when empty
 	items       []pickItem
-	filter      string
+	filter      editLine
 	cursor      int
 	offset      int
 	width       int
@@ -31,6 +31,8 @@ type picker struct {
 
 func newPicker(title, desc string, items []pickItem, initial string, width, height int) *picker {
 	p := &picker{title: title, desc: desc, items: items, width: width, height: height}
+	p.filter = newEditLine("")
+	p.filter.Focus()
 	p.refilter()
 	for i, idx := range p.vis {
 		if items[idx].value == initial {
@@ -46,7 +48,7 @@ func (p *picker) setSize(w, h int) { p.width, p.height = w, h; p.clamp() }
 func (p *picker) listHeight() int { return max(3, p.height-5) }
 
 func (p *picker) refilter() {
-	f := strings.ToLower(strings.TrimSpace(p.filter))
+	f := strings.ToLower(strings.TrimSpace(p.filter.Value()))
 	p.vis = p.vis[:0]
 	for i, it := range p.items {
 		if f == "" || strings.Contains(strings.ToLower(it.label), f) {
@@ -92,8 +94,8 @@ func (p *picker) Update(msg tea.Msg) pickAction {
 	}
 	switch k.String() {
 	case "esc":
-		if p.filter != "" {
-			p.filter = ""
+		if !p.filter.Empty() {
+			p.filter.Set("")
 			p.refilter()
 			return pickNone
 		}
@@ -115,18 +117,10 @@ func (p *picker) Update(msg tea.Msg) pickAction {
 		p.cursor = 0
 	case "end":
 		p.cursor = len(p.vis) - 1
-	case "backspace":
-		if p.filter != "" {
-			r := []rune(p.filter)
-			p.filter = string(r[:len(r)-1])
-			p.refilter()
-		}
-	case "ctrl+u":
-		p.filter = ""
-		p.refilter()
 	default:
-		if k.Type == tea.KeyRunes || k.Type == tea.KeySpace {
-			p.filter += k.String()
+		// every other key edits the filter, inside it as well as at its
+		// end: the list keeps only the keys that move in it
+		if p.filter.Update(k) {
 			p.refilter()
 		}
 	}
@@ -169,7 +163,7 @@ func (p *picker) View() string {
 	var b strings.Builder
 	b.WriteString(titleBar(p.width, p.title) + "\n")
 	b.WriteString(" " + styleMuted.Render(fit(p.desc, p.width-2)) + "\n")
-	f := " " + styleLabel.Render("Filter: ") + styleFocus.Render(p.filter+"▏")
+	f := " " + styleLabel.Render("Filter: ") + p.filter.View()
 	if len(p.vis) != len(p.items) {
 		f += styleMuted.Render(fmt.Sprintf("   %d of %d", len(p.vis), len(p.items)))
 	}

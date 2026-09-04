@@ -128,7 +128,7 @@ func (m *Model) rebuildRows() {
 		return
 	}
 	s := m.store
-	f := strings.ToLower(strings.TrimSpace(m.filter))
+	f := strings.ToLower(strings.TrimSpace(m.filter.Value()))
 	match := func(n node) bool {
 		if f == "" {
 			return true
@@ -460,21 +460,18 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.filterOn {
 		switch k.String() {
 		case "esc":
-			m.filter, m.filterOn = "", false
+			m.filter.Set("")
+			m.filterOn = false
 			m.rebuildRows()
 		case "enter":
 			m.filterOn = false
-		case "backspace":
-			if r := []rune(m.filter); len(r) > 0 {
-				m.filter = string(r[:len(r)-1])
-				m.rebuildRows()
-			}
 		case "up", "down", "pgup", "pgdown":
 			m.filterOn = false
 			return m.updateMain(msg)
 		default:
-			if k.Type == tea.KeyRunes || k.Type == tea.KeySpace {
-				m.filter += k.String()
+			// every other key edits the filter, inside it as well as
+			// at its end
+			if m.filter.Update(k) {
 				m.rebuildRows()
 			}
 		}
@@ -486,8 +483,8 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	n := m.selected()
 	switch k.String() {
 	case "q", "esc":
-		if m.filter != "" {
-			m.filter = ""
+		if !m.filter.Empty() {
+			m.filter.Set("")
 			m.rebuildRows()
 			return m, nil
 		}
@@ -877,11 +874,12 @@ func (m *Model) mainView() string {
 	if len(s.Services) > 0 {
 		hdr += fmt.Sprintf(", %d services", len(s.Services))
 	}
-	if m.filter != "" || m.filterOn {
-		hdr += styleLabel.Render("   Filter: ") + styleFocus.Render(m.filter)
+	if !m.filter.Empty() || m.filterOn {
+		hdr += styleLabel.Render("   Filter: ")
 		if m.filterOn {
-			hdr += styleFocus.Render("▏")
+			hdr += m.filter.View()
 		} else {
+			hdr += styleFocus.Render(m.filter.Value())
 			hdr += styleMuted.Render(fmt.Sprintf("  (%d shown, esc clears)", len(m.rows)))
 		}
 	}
@@ -912,13 +910,13 @@ func (m *Model) mainView() string {
 			last = cli.Ago(s.Loaded, m.now)
 		case kSection:
 			mark := "▸ "
-			if m.isOpen(n) || m.filter != "" {
+			if m.isOpen(n) || !m.filter.Empty() {
 				mark = "▾ "
 			}
 			name = "  " + mark + name
 		case kStream:
 			mark := "▸ "
-			if m.isOpen(n) || m.filter != "" {
+			if m.isOpen(n) || !m.filter.Empty() {
 				mark = "▾ "
 			}
 			if n.stream.ConsumerCount() == 0 {

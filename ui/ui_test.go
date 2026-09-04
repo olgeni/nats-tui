@@ -131,7 +131,7 @@ func TestMainScreen(t *testing.T) {
 		t.Errorf("filter:\n%s", v)
 	}
 	press(m, "esc")
-	if m.filter != "" {
+	if !m.filter.Empty() {
 		t.Error("esc did not clear the filter")
 	}
 	press(m, "?")
