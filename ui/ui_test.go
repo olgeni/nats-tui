@@ -578,6 +578,27 @@ func TestObjectGetKey(t *testing.T) {
 	}
 }
 
+// the messages table binds g and the paging keys itself: they reach
+// messageKeys instead of only moving the cursor.
+func TestMessageKeysReachTheHandler(t *testing.T) {
+	m, _ := testModel(t)
+	runCmd(t, m, m.showMessages(m.store.Stream("ORDERS"), 0, ""))
+	if m.scr != scrTable || m.tbl.kind != tkMessages {
+		t.Fatalf("messages table: scr %v", m.scr)
+	}
+	runCmd(t, m, press(m, "g"))
+	if m.scr != scrForm || !strings.Contains(m.View(), "Go to sequence") {
+		t.Fatalf("after g: scr %v\n%s", m.scr, m.View())
+	}
+	runCmd(t, m, press(m, "esc"))
+	// end asks for the last page, it does not only move the cursor
+	m.tbl.last, m.tbl.cursor = false, 0
+	runCmd(t, m, press(m, "end"))
+	if !m.tbl.last {
+		t.Fatalf("end did not load the last page: last=%v cursor=%d", m.tbl.last, m.tbl.cursor)
+	}
+}
+
 // update is Update returning only the command.
 func (m *Model) update(msg tea.Msg) tea.Cmd {
 	_, cmd := m.Update(msg)

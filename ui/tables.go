@@ -251,6 +251,12 @@ func (m *Model) updateTable(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !ok {
 		return m, nil
 	}
+	// a table that binds a navigation key itself gets it first: the
+	// messages table pages through the stream, the objects table writes
+	// an object to a file
+	if kindBindings[t.kind][k.String()] {
+		return m, m.kindKeys(t.kind, k.String())
+	}
 	switch k.String() {
 	case "esc", "q":
 		m.scr = scrMain
@@ -266,13 +272,7 @@ func (m *Model) updateTable(msg tea.Msg) (tea.Model, tea.Cmd) {
 		t.cursor -= t.listHeight()
 	case "pgdown":
 		t.cursor += t.listHeight()
-	case "home":
-		t.cursor = 0
-	case "g":
-		// the messages and the objects tables bind g themselves
-		if t.kind == tkMessages || t.kind == tkObjects {
-			return m, m.kindKeys(t.kind, "g")
-		}
+	case "home", "g":
 		t.cursor = 0
 	case "end", "G":
 		t.cursor = len(t.rows) - 1
@@ -290,6 +290,13 @@ func (m *Model) updateTable(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	t.clamp()
 	return m, nil
+}
+
+// kindBindings are the keys the generic navigation would otherwise
+// swallow before the handler of the table kind sees them.
+var kindBindings = map[tableKind]map[string]bool{
+	tkMessages: {"pgup": true, "pgdown": true, "end": true, "G": true, "g": true},
+	tkObjects:  {"g": true},
 }
 
 // kindKeys hands a key to the handler of the table kind.
