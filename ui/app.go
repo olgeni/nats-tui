@@ -315,6 +315,35 @@ func (m *Model) openEditor(ed *editor, onOK func(m *Model, ed *editor) tea.Cmd) 
 	return nil
 }
 
+// expandTabs turns tabs into spaces before a text reaches the viewport:
+// the viewport cuts long lines at the width counting a tab as no cell,
+// lipgloss then renders it as four spaces, and the line that is now too
+// wide wraps onto a second row that pushes the last lines of the text
+// past the bottom, where they are dropped. A generated server
+// configuration indents its JWT lines with tabs.
+func expandTabs(s string) string {
+	if !strings.Contains(s, "\t") {
+		return s
+	}
+	var b strings.Builder
+	col := 0
+	for _, r := range s {
+		switch r {
+		case '\t':
+			n := 8 - col%8
+			b.WriteString(strings.Repeat(" ", n))
+			col += n
+		case '\n':
+			b.WriteRune(r)
+			col = 0
+		default:
+			b.WriteRune(r)
+			col++
+		}
+	}
+	return b.String()
+}
+
 // showText shows a scrollable text screen; esc returns to where it was
 // opened from.
 func (m *Model) showText(title, text, help string) {
@@ -322,7 +351,7 @@ func (m *Model) showText(title, text, help string) {
 	if help == "" {
 		m.vpHelp = helpLine("esc/q", "back", "↑↓ ←→", "scroll")
 	}
-	m.vp.SetContent(text)
+	m.vp.SetContent(expandTabs(text))
 	m.vp.GotoTop()
 	m.vp.SetXOffset(0)
 	if m.scr != scrText {
@@ -499,7 +528,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.openTable(msg.tbl)
 	case ranMsg:
 		m.results = msg.results
-		m.vp.SetContent(m.resultText())
+		m.vp.SetContent(expandTabs(m.resultText()))
 		m.vp.GotoTop()
 		m.vp.SetXOffset(0)
 		m.scr = scrResult

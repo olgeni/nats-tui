@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -856,5 +857,26 @@ func TestTextScrollsSideways(t *testing.T) {
 	m.showText("other", strings.Repeat(" ", 100)+"MARK", "")
 	if strings.Contains(m.View(), "MARK") {
 		t.Errorf("new text:\n%s", m.View())
+	}
+}
+
+func TestTabbedLongLineKeepsTheLastLines(t *testing.T) {
+	m := New(cli.Settings{})
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 10})
+	// a tab-indented line wider than the screen, as nsc generate config
+	// writes its JWTs, followed by the closing brace
+	var lines []string
+	for i := 0; i < 20; i++ {
+		lines = append(lines, fmt.Sprintf("line %d", i))
+	}
+	lines = append(lines, "\tKEY: "+strings.Repeat("x", 300), "}", "THE END")
+	m.showText("cfg", strings.Join(lines, "\n"), "")
+	m.vp.GotoBottom()
+	v := m.View()
+	if !strings.Contains(v, "THE END") || !strings.Contains(v, "}") || !strings.Contains(v, "        KEY: xxx") {
+		t.Errorf("the end of the text is not shown:\n%s", v)
+	}
+	if expandTabs("a\tb\n\tc") != "a       b\n        c" {
+		t.Errorf("expandTabs: %q", expandTabs("a\tb\n\tc"))
 	}
 }
