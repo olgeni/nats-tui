@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -548,6 +550,31 @@ func TestLazyConsumersAndObjects(t *testing.T) {
 	runCmd(t, m, press(m, "O"))
 	if m.scr != scrTable || !m.store.Object("FILES").Loaded {
 		t.Fatalf("objects table: scr %v loaded %v", m.scr, m.store.Object("FILES").Loaded)
+	}
+}
+
+// g on the objects table asks for the file to write, it does not jump to
+// the first row the way it does on the other tables.
+func TestObjectGetKey(t *testing.T) {
+	m, x := testModel(t)
+	file := filepath.Join(t.TempDir(), "hello.txt")
+	if err := os.WriteFile(file, []byte("hello object"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	testnats.Must(t, x, "object", "put", "FILES", file, "--name=hello.txt", "-f", "--no-progress")
+	runCmd(t, m, m.load())
+	runCmd(t, m, m.showObjects(m.store.Object("FILES")))
+	if m.scr != scrTable || len(m.tbl.rows) != 1 {
+		t.Fatalf("objects table: scr %v rows %d", m.scr, len(m.tbl.rows))
+	}
+	runCmd(t, m, press(m, "g"))
+	if m.scr != scrForm || !strings.Contains(m.View(), "hello.txt") {
+		t.Fatalf("after g: scr %v\n%s", m.scr, m.View())
+	}
+	// the form only builds the plan: it is run from the preview
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrPlan || !strings.Contains(m.View(), "object get FILES hello.txt") {
+		t.Fatalf("after the form: scr %v\n%s", m.scr, m.View())
 	}
 }
 

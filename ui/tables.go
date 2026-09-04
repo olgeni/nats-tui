@@ -266,7 +266,13 @@ func (m *Model) updateTable(msg tea.Msg) (tea.Model, tea.Cmd) {
 		t.cursor -= t.listHeight()
 	case "pgdown":
 		t.cursor += t.listHeight()
-	case "home", "g":
+	case "home":
+		t.cursor = 0
+	case "g":
+		// the messages and the objects tables bind g themselves
+		if t.kind == tkMessages || t.kind == tkObjects {
+			return m, m.kindKeys(t.kind, "g")
+		}
 		t.cursor = 0
 	case "end", "G":
 		t.cursor = len(t.rows) - 1
@@ -280,23 +286,29 @@ func (m *Model) updateTable(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "m":
 		return m, m.toggleMouse()
 	default:
-		switch t.kind {
-		case tkContexts:
-			return m, m.contextKeys(k.String())
-		case tkMessages:
-			return m, m.messageKeys(k.String())
-		case tkSubjects:
-			return m, m.subjectKeys(k.String())
-		case tkKeys:
-			return m, m.kvKeys(k.String())
-		case tkHistory:
-			return m, m.historyKeys(k.String())
-		case tkObjects:
-			return m, m.objectKeys(k.String())
-		}
+		return m, m.kindKeys(t.kind, k.String())
 	}
 	t.clamp()
 	return m, nil
+}
+
+// kindKeys hands a key to the handler of the table kind.
+func (m *Model) kindKeys(kind tableKind, key string) tea.Cmd {
+	switch kind {
+	case tkContexts:
+		return m.contextKeys(key)
+	case tkMessages:
+		return m.messageKeys(key)
+	case tkSubjects:
+		return m.subjectKeys(key)
+	case tkKeys:
+		return m.kvKeys(key)
+	case tkHistory:
+		return m.historyKeys(key)
+	case tkObjects:
+		return m.objectKeys(key)
+	}
+	return nil
 }
 
 // ---------------------------------------------------------------- contexts
