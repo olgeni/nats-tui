@@ -471,6 +471,17 @@ func TestAccountBackupRestoreAndConsumerCopy(t *testing.T) {
 	if err != nil || len(cons) != 2 || cons[1].Name() != "worker2" || cons[1].Info.Config.FilterSubject != "orders.new" {
 		t.Fatalf("consumer copy: %v %v", cons, err)
 	}
+	// a reset rewinds the delivery position
+	testnats.Must(t, x, "consumer", "next", "ORDERS", "worker", "--count=2")
+	cons, _ = c.Consumers("ORDERS")
+	if cons[0].Info.Delivered.Stream != 2 {
+		t.Fatalf("delivered before reset: %+v", cons[0].Info.Delivered)
+	}
+	run(t, x, cli.ResetConsumer("ORDERS", "worker", 1))
+	cons, _ = c.Consumers("ORDERS")
+	if cons[0].Info.Delivered.Stream != 0 {
+		t.Errorf("delivered after reset: %+v", cons[0].Info.Delivered)
+	}
 	dir := filepath.Join(t.TempDir(), "acct")
 	run(t, x, cli.BackupAccount(dir, true, false))
 	if cli.BackupKind(dir) != "account" || cli.BackupKind(filepath.Join(dir, "ORDERS")) != "stream" || cli.BackupKind(t.TempDir()) != "" {

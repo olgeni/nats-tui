@@ -796,3 +796,41 @@ func TestAccountBackupAndConsumerCopyKeys(t *testing.T) {
 		t.Errorf("after copy: %v consumers %d", m.scr, m.store.Stream("ORDERS").ConsumerCount())
 	}
 }
+
+func TestClusterMenuResetsConsumer(t *testing.T) {
+	m, _ := testModel(t)
+	press(m, "down", "down", "right", "down")
+	if m.selected().kind != kConsumer {
+		t.Fatalf("not on the consumer: %v", m.selected().kind)
+	}
+	press(m, "L")
+	if m.scr != scrPicker || !strings.Contains(m.View(), "consumer reset worker") {
+		t.Fatalf("cluster menu:\n%s", m.View())
+	}
+	for _, r := range "reset" {
+		press(m, string(r))
+	}
+	press(m, "enter")
+	if m.scr != scrForm {
+		t.Fatalf("reset form: %v", m.scr)
+	}
+	press(m, "1")
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrPlan || !strings.Contains(m.View(), "consumer reset ORDERS worker --sequence=1 -f") {
+		t.Fatalf("reset plan:\n%s", m.View())
+	}
+	runCmd(t, m, press(m, "enter"))
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrMain || m.errMsg != "" {
+		t.Errorf("after reset: %v %s", m.scr, m.errMsg)
+	}
+	// the server commands are offered on any row, with the server ID filled in
+	press(m, "L")
+	for _, r := range "kick" {
+		press(m, string(r))
+	}
+	press(m, "enter")
+	if m.scr != scrEditor || m.editor.get("server").text != m.store.Server.ID {
+		t.Fatalf("kick editor: %v %q", m.scr, m.editor.get("server").text)
+	}
+}

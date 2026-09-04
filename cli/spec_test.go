@@ -115,6 +115,43 @@ func TestConsumerPlans(t *testing.T) {
 	}
 }
 
+func TestClusterPlans(t *testing.T) {
+	cases := []struct {
+		p    *Plan
+		want string
+	}{
+		{StepDownStream("ORDERS", ""), "stream cluster step-down ORDERS -f"},
+		{StepDownStream("ORDERS", "n2"), "stream cluster step-down ORDERS --preferred=n2 -f"},
+		{RemoveStreamPeer("ORDERS", "n1"), "stream cluster peer-remove ORDERS n1 -f"},
+		{StepDownConsumer("ORDERS", "worker", ""), "consumer cluster step-down ORDERS worker -f"},
+		{StepDownMeta("", "", nil), "server cluster step-down -f"},
+		{StepDownMeta("east", "n3", []string{"ssd", "big"}), "server cluster step-down --cluster=east --host=n3 --tags=ssd --tags=big -f"},
+		{RemoveServerPeer("n1"), "server cluster peer-remove n1 -f"},
+		{BalanceStreams(nil), "stream cluster balance"},
+		{BalanceStreams([]string{"--empty", "--idle", "1h"}), "stream cluster balance --empty --idle 1h"},
+		{BalanceConsumers("ORDERS", []string{"--pull"}), "consumer cluster balance ORDERS --pull"},
+		{ReloadConfig("NABC"), "server config reload NABC -f"},
+		{KickClient("12", "NABC"), "server request kick 12 NABC"},
+		{PurgeAccount("ACME"), "server account purge ACME -f"},
+		{ResetConsumer("ORDERS", "worker", 0), "consumer reset ORDERS worker -f"},
+		{ResetConsumer("ORDERS", "worker", 7), "consumer reset ORDERS worker --sequence=7 -f"},
+		{UnpinConsumer("ORDERS", "worker", "grp"), "consumer unpin ORDERS worker grp -f"},
+		{BackupAccount("/b", false, true), "account backup /b -f --no-consumers --check"},
+		{RestoreAccount("/b"), "account restore /b"},
+		{CopyConsumer("ORDERS", "worker", "w2"), "consumer copy ORDERS worker w2"},
+	}
+	for _, c := range cases {
+		if a := strings.Join(c.p.Cmds[0].Args, " "); a != c.want {
+			t.Errorf("%s: %s", c.want, a)
+		}
+	}
+	for _, p := range []*Plan{RemoveStreamPeer("S", "n"), RemoveServerPeer("n"), KickClient("1", "n"), PurgeAccount("a"), ResetConsumer("S", "c", 0), RestoreAccount("/b")} {
+		if !p.Dangerous() {
+			t.Errorf("%s should be flagged", p.Title)
+		}
+	}
+}
+
 func TestBucketPlans(t *testing.T) {
 	s := NewKVSpec()
 	s.Name, s.History, s.TTL = "CONFIG", 5, "1h"

@@ -653,6 +653,8 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.monitor(n)
 	case "T":
 		return m, m.reports(n)
+	case "L":
+		return m, m.cluster(n)
 	case "C":
 		return m, m.showContexts()
 	case "S":

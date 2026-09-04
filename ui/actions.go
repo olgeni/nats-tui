@@ -1421,6 +1421,143 @@ func (m *Model) reports(n node) tea.Cmd {
 	}, nil)
 }
 
+// ---------------------------------------------------------------- cluster administration
+
+// cluster is the L menu: the RAFT and server administration commands, the
+// ones for the selected stream or consumer first. They change the cluster
+// rather than an entity, so each one is a plan like any other.
+func (m *Model) cluster(n node) tea.Cmd {
+	var items []pickItem
+	switch n.kind {
+	case kStream:
+		items = append(items,
+			pickItem{"stream cluster step-down " + n.stream.Name() + "   — elect a new leader for the stream", "streamdown"},
+			pickItem{"stream cluster peer-remove " + n.stream.Name() + " — move the stream away from one of its servers", "streampeer"},
+		)
+	case kConsumer:
+		items = append(items,
+			pickItem{"consumer cluster step-down " + n.cons.Name() + "   — elect a new leader for the consumer", "consumerdown"},
+			pickItem{"consumer reset " + n.cons.Name() + "   — deliver again from a sequence, or the outstanding messages", "reset"},
+			pickItem{"consumer unpin " + n.cons.Name() + "   — release the client pinned to a priority group", "unpin"},
+		)
+	}
+	items = append(items,
+		pickItem{"stream cluster balance      — spread the stream leaders over the servers", "balancestreams"},
+		pickItem{"consumer cluster balance    — spread the consumer leaders of a stream", "balanceconsumers"},
+		pickItem{"server cluster step-down    — elect a new JetStream meta leader (system account)", "metadown"},
+		pickItem{"server cluster peer-remove  — remove a server from the JetStream cluster (system account)", "serverpeer"},
+		pickItem{"server config reload        — make a server re-read its configuration (system account)", "reload"},
+		pickItem{"server request kick         — disconnect a client (system account)", "kick"},
+		pickItem{"server account purge        — delete every JetStream asset of an account (system account)", "purge"},
+	)
+	return m.openPicker("Cluster", "Leader elections, peer removals and the server commands; the latter need a system account context.", items, "", func(m *Model, v string) tea.Cmd {
+		switch v {
+		case "streamdown":
+			return m.askPreferred("Step down the leader of "+n.stream.Name(), func(m *Model, host string) tea.Cmd {
+				return m.runPlan(cli.StepDownStream(n.stream.Name(), host), nil)
+			})
+		case "streampeer":
+			return m.askString("Peer to remove from "+n.stream.Name(), "The server name of the peer; the stream is placed on another server.", "", nonEmpty("a server name"), func(m *Model, peer string) tea.Cmd {
+				return m.runPlan(cli.RemoveStreamPeer(n.stream.Name(), peer), nil)
+			})
+		case "consumerdown":
+			return m.askPreferred("Step down the leader of "+n.cons.Name(), func(m *Model, host string) tea.Cmd {
+				return m.runPlan(cli.StepDownConsumer(n.cons.Stream.Name(), n.cons.Name(), host), nil)
+			})
+		case "reset":
+			return m.askString("Reset "+n.cons.Name()+" to stream sequence", fmt.Sprintf("Delivery starts again from this sequence; blank keeps the position and delivers the outstanding messages again. Last delivered: %d, acknowledged up to: %d.", n.cons.Info.Delivered.Stream, n.cons.Info.AckFloor.Stream), "", optional(validInt("a sequence")), func(m *Model, seq string) tea.Cmd {
+				var v uint64
+				if seq != "" {
+					v, _ = strconv.ParseUint(seq, 10, 64)
+				}
+				return m.runPlan(cli.ResetConsumer(n.cons.Stream.Name(), n.cons.Name(), v), nil)
+			})
+		case "unpin":
+			return m.askString("Priority group to unpin on "+n.cons.Name(), "The pinned client of the group is released and another one takes its place.", "", nonEmpty("a group name"), func(m *Model, group string) tea.Cmd {
+				return m.runPlan(cli.UnpinConsumer(n.cons.Stream.Name(), n.cons.Name(), group), nil)
+			})
+		case "balancestreams":
+			return m.askString("nats stream cluster balance", "Flags selecting the streams: --server-name x, --cluster x, --empty, --idle 1h, --created 7d, --consumers 5, --subject x.>, --replicas 3, --sourced, --mirrored, --leader x, --invert, --expression '…'; blank balances every stream.", "", nil, func(m *Model, flags string) tea.Cmd {
+				return m.runPlan(cli.BalanceStreams(strings.Fields(flags)), nil)
+			})
+		case "balanceconsumers":
+			balance := func(m *Model, st *cli.Stream) tea.Cmd {
+				return m.askString("nats consumer cluster balance "+st.Name(), "Flags selecting the consumers: --pull, --push, --bound, --waiting 5, --ack-pending 10, --pending 100, --idle 1h, --created 7d, --replicas 3, --leader x, --pinned, --invert; blank balances every consumer.", "", nil, func(m *Model, flags string) tea.Cmd {
+					return m.runPlan(cli.BalanceConsumers(st.Name(), strings.Fields(flags)), nil)
+				})
+			}
+			if st := n.streamOf(); st != nil {
+				return balance(m, st)
+			}
+			return m.pickStream("Balance the consumers of which stream?", balance)
+		case "metadown":
+			fields := []*field{
+				section("Where the new meta leader should be"),
+				textField("cluster", "Cluster", "", "", "(any)", nil),
+				textField("host", "Host", "", "a server name", "(any)", nil),
+				listField("tags", "Tags", nil, "servers holding these tags"),
+			}
+			return m.openEditor(newEditor("Step down the JetStream meta leader", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+				return m.runPlan(cli.StepDownMeta(ed.str("cluster"), ed.str("host"), ed.list("tags")), nil)
+			})
+		case "serverpeer":
+			return m.askString("Server to remove from the JetStream cluster", "Its name or ID; every stream and consumer it holds is moved to the remaining servers.", "", nonEmpty("a server name"), func(m *Model, name string) tea.Cmd {
+				return m.runPlan(cli.RemoveServerPeer(name), nil)
+			})
+		case "reload":
+			return m.askString("Server to reload", "The ID of the server that re-reads its configuration file.", m.serverID(), nonEmpty("a server ID"), func(m *Model, id string) tea.Cmd {
+				return m.runPlan(cli.ReloadConfig(id), nil)
+			})
+		case "kick":
+			fields := []*field{
+				section("Disconnect a client"),
+				textField("client", "Client ID", "", "the CID nats server report connections shows", "required", validInt("a client ID")),
+				textField("server", "Server ID", m.serverID(), "the server the client is connected to", "required", nonEmpty("a server ID")),
+			}
+			return m.openEditor(newEditor("Kick a client", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+				return m.runPlan(cli.KickClient(ed.str("client"), ed.str("server")), nil)
+			})
+		case "purge":
+			return m.askString("Account to purge", "Every stream and consumer of the account is deleted from the cluster.", "", nonEmpty("an account name"), func(m *Model, name string) tea.Cmd {
+				return m.runPlan(cli.PurgeAccount(name), nil)
+			})
+		}
+		return nil
+	}, nil)
+}
+
+// serverID is the ID of the connected server, the default for the
+// commands that address one.
+func (m *Model) serverID() string {
+	if m.store == nil {
+		return ""
+	}
+	return m.store.Server.ID
+}
+
+// askString asks for one string in a form and passes it, trimmed, on.
+func (m *Model) askString(title, desc, initial string, validate func(string) error, done func(m *Model, s string) tea.Cmd) tea.Cmd {
+	m.formVals.str = initial
+	return m.openForm(inputForm(title, desc, "", &m.formVals.str, validate), func(m *Model) tea.Cmd {
+		return done(m, strings.TrimSpace(m.formVals.str))
+	}, nil)
+}
+
+// askPreferred asks for the host a new leader should be placed on.
+func (m *Model) askPreferred(title string, done func(m *Model, host string) tea.Cmd) tea.Cmd {
+	return m.askString(title, "The server name the new leader should be placed on; blank lets the cluster choose.", "", nil, done)
+}
+
+// optional accepts a blank value and validates the rest.
+func optional(validate func(string) error) func(string) error {
+	return func(s string) error {
+		if strings.TrimSpace(s) == "" {
+			return nil
+		}
+		return validate(s)
+	}
+}
+
 // ---------------------------------------------------------------- backup, restore, copy
 
 func (m *Model) backupStream(st *cli.Stream) tea.Cmd {

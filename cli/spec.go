@@ -480,6 +480,127 @@ func CopyStream(from, to string, subjects []string) *Plan {
 	return p
 }
 
+// ---------------------------------------------------------------- cluster administration
+
+// StepDownStream makes the leader of a stream's RAFT group stand down, so
+// that a new one is elected; preferred names the host the leader should
+// move to.
+func StepDownStream(name, preferred string) *Plan {
+	p := &Plan{Title: "Step down the leader of " + name}
+	args := []string{"stream", "cluster", "step-down", name}
+	if preferred != "" {
+		args = append(args, "--preferred="+preferred)
+	}
+	p.Add("elect a new leader for the stream", append(args, "-f")...)
+	return p
+}
+
+// RemoveStreamPeer removes a server from the RAFT group of a stream; the
+// stream is placed on another server.
+func RemoveStreamPeer(name, peer string) *Plan {
+	p := &Plan{Title: "Remove peer " + peer + " from " + name}
+	p.AddDanger("remove the peer: the stream is moved to another server", "stream", "cluster", "peer-remove", name, peer, "-f")
+	return p
+}
+
+// StepDownConsumer makes the leader of a consumer's RAFT group stand down.
+func StepDownConsumer(stream, name, preferred string) *Plan {
+	p := &Plan{Title: "Step down the leader of " + name}
+	args := []string{"consumer", "cluster", "step-down", stream, name}
+	if preferred != "" {
+		args = append(args, "--preferred="+preferred)
+	}
+	p.Add("elect a new leader for the consumer", append(args, "-f")...)
+	return p
+}
+
+// StepDownMeta makes the JetStream meta leader stand down; the cluster,
+// host and tags ask where the new one should be.
+func StepDownMeta(cluster, host string, tags []string) *Plan {
+	p := &Plan{Title: "Step down the JetStream meta leader"}
+	args := []string{"server", "cluster", "step-down"}
+	if cluster != "" {
+		args = append(args, "--cluster="+cluster)
+	}
+	if host != "" {
+		args = append(args, "--host="+host)
+	}
+	for _, t := range tags {
+		args = append(args, "--tags="+t)
+	}
+	p.Add("elect a new meta leader", append(args, "-f")...)
+	return p
+}
+
+// RemoveServerPeer removes a server from the JetStream cluster: its
+// streams and consumers are placed elsewhere.
+func RemoveServerPeer(name string) *Plan {
+	p := &Plan{Title: "Remove server " + name + " from the JetStream cluster"}
+	p.AddDanger("remove the server from the meta group: every asset it holds is moved", "server", "cluster", "peer-remove", name, "-f")
+	return p
+}
+
+// BalanceStreams moves stream leaders so that they spread over the
+// servers; the flags select the streams, as nats stream cluster balance
+// takes them.
+func BalanceStreams(flags []string) *Plan {
+	p := &Plan{Title: "Balance the stream leaders"}
+	p.Add("step down leaders until the streams spread evenly", append([]string{"stream", "cluster", "balance"}, flags...)...)
+	return p
+}
+
+// BalanceConsumers does the same for the consumers of a stream.
+func BalanceConsumers(stream string, flags []string) *Plan {
+	p := &Plan{Title: "Balance the consumer leaders of " + stream}
+	p.Add("step down leaders until the consumers spread evenly", append([]string{"consumer", "cluster", "balance", stream}, flags...)...)
+	return p
+}
+
+// ReloadConfig makes a server re-read its configuration file.
+func ReloadConfig(serverID string) *Plan {
+	p := &Plan{Title: "Reload the configuration of " + serverID}
+	p.Add("ask the server to re-read its configuration", "server", "config", "reload", serverID, "-f")
+	return p
+}
+
+// KickClient disconnects a client from a server.
+func KickClient(clientID, serverID string) *Plan {
+	p := &Plan{Title: "Kick client " + clientID}
+	p.AddDanger("disconnect the client (it may reconnect)", "server", "request", "kick", clientID, serverID)
+	return p
+}
+
+// PurgeAccount removes every JetStream asset of an account from the
+// cluster.
+func PurgeAccount(name string) *Plan {
+	p := &Plan{Title: "Purge the JetStream assets of account " + name}
+	p.AddDanger("delete every stream and consumer of the account", "server", "account", "purge", name, "-f")
+	return p
+}
+
+// ResetConsumer moves the delivery position of a consumer back: to a
+// stream sequence, or, without one, to its acknowledgement floor so that
+// the outstanding messages are delivered again.
+func ResetConsumer(stream, name string, seq uint64) *Plan {
+	p := &Plan{Title: "Reset consumer " + name}
+	args := []string{"consumer", "reset", stream, name}
+	desc := "deliver the outstanding messages again"
+	if seq > 0 {
+		args = append(args, fmt.Sprintf("--sequence=%d", seq))
+		desc = fmt.Sprintf("deliver again from stream sequence %d", seq)
+	}
+	p.AddDanger(desc, append(args, "-f")...)
+	return p
+}
+
+// UnpinConsumer releases the client pinned to a priority group of a
+// consumer, so that another one is pinned.
+func UnpinConsumer(stream, name, group string) *Plan {
+	p := &Plan{Title: "Unpin group " + group + " of " + name}
+	p.Add("release the pinned client of the group", "consumer", "unpin", stream, name, group, "-f")
+	return p
+}
+
 // ---------------------------------------------------------------- consumers
 
 // ConsumerSpec is the configuration of a consumer as nats consumer
