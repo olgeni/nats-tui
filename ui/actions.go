@@ -1113,23 +1113,72 @@ func (m *Model) accountInfo() tea.Cmd {
 	return m.runText("Account information (nats account info)", "account", "info")
 }
 
-func (m *Model) monitor() tea.Cmd {
-	items := []pickItem{
-		{"server list          — every server of the cluster (system account)", "list"},
-		{"server info          — the connected server (system account)", "info"},
-		{"server ping          — round trips to every server (system account)", "ping"},
-		{"server report connections   — connections and their traffic (system account)", "connz"},
-		{"server report jetstream     — JetStream usage per server (system account)", "jsz"},
-		{"server report accounts      — accounts and their activity (system account)", "accounts"},
-		{"server report health        — server health (system account)", "health"},
-		{"server check jetstream      — JetStream account state check", "checkjs"},
-		{"server check connection     — connection health check", "checkconn"},
-		{"rtt                  — round-trip times to the server (any user)", "rtt"},
-		{"account info         — this account's JetStream usage (any user)", "account"},
-		{"account report connections  — this account's connections", "acctconn"},
+// runCheck runs a nats server check and shows its report: a warning or a
+// critical state exits non-zero, which is the result, not a failure.
+func (m *Model) runCheck(title string, args ...string) tea.Cmd {
+	r := m.runner
+	if m.scr != scrText {
+		m.textBack = m.scr
 	}
+	args = append(args, "--format=text")
+	return m.busy("Running "+m.settings.CommandLine(args)+"…", func() tea.Msg {
+		res := r.Run(args...)
+		out := res.Output()
+		if !res.OK() && (out == "" || strings.Contains(out, "usage:")) {
+			return textMsg{err: fmt.Errorf("%s: %s", strings.Join(args, " "), res.Message())}
+		}
+		return textMsg{title: title, text: styleMuted.Render("$ "+m.settings.CommandLine(args)) + "\n\n" + out}
+	})
+}
+
+// monitor is the M menu: the checks of the selected entity first, then the
+// server commands, the reports, the checks that need thresholds, and the
+// account commands any user can run.
+func (m *Model) monitor(n node) tea.Cmd {
+	var items []pickItem
+	switch n.kind {
+	case kStream:
+		items = append(items, pickItem{"server check stream " + n.stream.Name() + "   — sources, mirror and cluster peers of the stream", "checkstream"})
+	case kConsumer:
+		items = append(items, pickItem{"server check consumer " + n.cons.Name() + "   — pending, waiting and redelivered messages of the consumer", "checkconsumer"})
+	case kKV:
+		items = append(items, pickItem{"server check kv " + n.kv.Name() + "   — the bucket answers and holds values", "checkkv"})
+	}
+	items = append(items,
+		pickItem{"server list          — every server of the cluster (system account)", "list"},
+		pickItem{"server info          — the connected server (system account)", "info"},
+		pickItem{"server ping          — round trips to every server (system account)", "ping"},
+		pickItem{"server report connections   — connections and their traffic (system account)", "connz"},
+		pickItem{"server report jetstream     — JetStream usage per server (system account)", "jsz"},
+		pickItem{"server report accounts      — accounts and their activity (system account)", "accounts"},
+		pickItem{"server report health        — server health (system account)", "health"},
+		pickItem{"server report cpu           — CPU usage per server (system account)", "cpu"},
+		pickItem{"server report mem           — memory usage per server (system account)", "mem"},
+		pickItem{"server report routes        — cluster routes and their traffic (system account)", "routes"},
+		pickItem{"server report gateways      — super-cluster gateways (system account)", "gateways"},
+		pickItem{"server report leafnodes     — leaf node connections (system account)", "leafnodes"},
+		pickItem{"server report downgrade     — assets a lower API level could not load (system account)", "downgrade"},
+		pickItem{"server account info         — one account as the servers see it (system account)", "sysaccount"},
+		pickItem{"server check jetstream      — JetStream account state check", "checkjs"},
+		pickItem{"server check connection     — connection health check", "checkconn"},
+		pickItem{"server check meta           — JetStream cluster state: peers, lag, last seen (system account)", "checkmeta"},
+		pickItem{"server check server         — one server: CPU, memory, connections, uptime (system account)", "checkserver"},
+		pickItem{"server check request        — a request-reply service answers, in time and as expected", "checkrequest"},
+		pickItem{"server check credential     — a credential file is valid and not about to expire", "checkcred"},
+		pickItem{"server mappings      — try a subject mapping on a subject", "mappings"},
+		pickItem{"rtt                  — round-trip times to the server (any user)", "rtt"},
+		pickItem{"account info         — this account's JetStream usage (any user)", "account"},
+		pickItem{"account report connections  — this account's connections", "acctconn"},
+		pickItem{"account tls          — the TLS certificate chain of the connection", "tls"},
+	)
 	return m.openPicker("Monitoring", "The server commands ask the system account for data: use a context whose credentials belong to it.", items, "", func(m *Model, v string) tea.Cmd {
 		switch v {
+		case "checkstream":
+			return m.runCheck("Check of stream "+n.stream.Name(), "server", "check", "stream", "--stream="+n.stream.Name())
+		case "checkconsumer":
+			return m.runCheck("Check of consumer "+n.cons.Name(), "server", "check", "consumer", "--stream="+n.cons.Stream.Name(), "--consumer="+n.cons.Name())
+		case "checkkv":
+			return m.runCheck("Check of bucket "+n.kv.Name(), "server", "check", "kv", "--bucket="+n.kv.Name())
 		case "list":
 			return m.runText("Servers (nats server list)", "server", "list")
 		case "info":
@@ -1144,19 +1193,174 @@ func (m *Model) monitor() tea.Cmd {
 			return m.runText("Accounts (nats server report accounts)", "server", "report", "accounts")
 		case "health":
 			return m.runText("Health (nats server report health)", "server", "report", "health")
+		case "cpu":
+			return m.runText("CPU (nats server report cpu)", "server", "report", "cpu")
+		case "mem":
+			return m.runText("Memory (nats server report mem)", "server", "report", "mem")
+		case "routes":
+			return m.runText("Routes (nats server report routes)", "server", "report", "routes")
+		case "gateways":
+			return m.runText("Gateways (nats server report gateways)", "server", "report", "gateways")
+		case "leafnodes":
+			return m.runText("Leaf nodes (nats server report leafnodes)", "server", "report", "leafnodes")
+		case "downgrade":
+			m.formVals.str = "1"
+			return m.openForm(inputForm("Target API level", "nats server report downgrade lists the streams and consumers a server of this JetStream API level could not load.", "1", &m.formVals.str, validInt("an API level")), func(m *Model) tea.Cmd {
+				return m.runText("Downgrade to API level "+m.formVals.str, "server", "report", "downgrade", m.formVals.str)
+			}, nil)
+		case "sysaccount":
+			m.formVals.str = ""
+			return m.openForm(inputForm("Account", "The name of the account nats server account info describes.", "ACME", &m.formVals.str, nonEmpty("an account name")), func(m *Model) tea.Cmd {
+				return m.runText("Account "+m.formVals.str+" (nats server account info)", "server", "account", "info", strings.TrimSpace(m.formVals.str))
+			}, nil)
 		case "checkjs":
-			return m.runText("JetStream check (nats server check jetstream)", "server", "check", "jetstream", "--format=text")
+			return m.runCheck("JetStream check (nats server check jetstream)", "server", "check", "jetstream")
 		case "checkconn":
-			return m.runText("Connection check (nats server check connection)", "server", "check", "connection", "--format=text")
+			return m.runCheck("Connection check (nats server check connection)", "server", "check", "connection")
+		case "checkmeta":
+			return m.checkMeta()
+		case "checkserver":
+			return m.checkServer()
+		case "checkrequest":
+			return m.checkRequest(defaultSubject(n))
+		case "checkcred":
+			return m.checkCredential()
+		case "mappings":
+			return m.tryMapping()
 		case "rtt":
 			return m.runText("Round-trip times (nats rtt)", "rtt")
 		case "account":
 			return m.accountInfo()
 		case "acctconn":
 			return m.runText("Connections (nats account report connections)", "account", "report", "connections")
+		case "tls":
+			return m.runText("TLS (nats account tls)", "account", "tls")
 		}
 		return nil
 	}, nil)
+}
+
+func validInt(what string) func(string) error {
+	return func(s string) error {
+		if _, err := strconv.Atoi(strings.TrimSpace(s)); err != nil {
+			return fmt.Errorf("%s is a number", what)
+		}
+		return nil
+	}
+}
+
+// checkMeta asks for the three thresholds nats server check meta requires.
+func (m *Model) checkMeta() tea.Cmd {
+	fields := []*field{
+		section("JetStream cluster check (nats server check meta)"),
+		intField("expect", "Servers expected", 3, "the number of JetStream peers the meta group should have"),
+		intField("lag", "Lag critical", 100, "critical when a peer is this many operations behind the leader"),
+		textField("seen", "Seen critical", "1m", "critical when a peer was last seen longer ago than this", "required", cli.ValidDuration),
+	}
+	return m.openEditor(newEditor("Check the JetStream cluster", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+		return m.runCheck("JetStream cluster check (nats server check meta)", "server", "check", "meta", "--expect="+ed.str("expect"), "--lag-critical="+ed.str("lag"), "--seen-critical="+ed.str("seen"))
+	})
+}
+
+// checkServer checks one server, the connected one unless another is named;
+// the thresholds are optional and passed only when given.
+func (m *Model) checkServer() tea.Cmd {
+	name := ""
+	if m.store != nil {
+		name = m.store.Server.Name
+	}
+	fields := []*field{
+		section("Server check (nats server check server)"),
+		textField("name", "Server", name, "the server name the check must find", "required", nonEmpty("a server name")),
+		textField("cpu", "CPU warn / critical", "", "percentages, for example 80,90", "(none)", nil),
+		textField("mem", "Memory warn / critical", "", "sizes, for example 1g,2g", "(none)", nil),
+		textField("conn", "Connections warn / critical", "", "counts", "(none)", nil),
+		textField("subs", "Subscriptions warn / critical", "", "counts", "(none)", nil),
+		textField("uptime", "Uptime warn / critical", "", "durations, for example 10m,1m: less than this is a problem", "(none)", nil),
+	}
+	return m.openEditor(newEditor("Check a server", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+		args := []string{"server", "check", "server", "--name=" + ed.str("name")}
+		for _, k := range []string{"cpu", "mem", "conn", "subs", "uptime"} {
+			pair := cli.SplitList(ed.str(k))
+			if len(pair) > 0 && pair[0] != "" {
+				args = append(args, "--"+k+"-warn="+pair[0])
+			}
+			if len(pair) > 1 && pair[1] != "" {
+				args = append(args, "--"+k+"-critical="+pair[1])
+			}
+		}
+		return m.runCheck("Check of server "+ed.str("name"), args...)
+	})
+}
+
+// checkRequest sends a request and checks the answer.
+func (m *Model) checkRequest(subject string) tea.Cmd {
+	fields := []*field{
+		section("Request check (nats server check request)"),
+		textField("subject", "Subject", subject, "", "required", validSubject),
+		textField("payload", "Payload", "", "the request body", "(empty)", nil),
+		textField("match", "Response matches", "", "a regular expression the reply body must match", "(any)", nil),
+		textField("warn", "Response time warn", "", "a duration", "(none)", cli.ValidDuration),
+		textField("critical", "Response time critical", "", "a duration", "(none)", cli.ValidDuration),
+	}
+	return m.openEditor(newEditor("Check a request-reply service", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+		f := []string{"server", "check", "request", "--subject=" + ed.str("subject")}
+		if v := ed.get("payload").text; v != "" {
+			f = append(f, "--payload="+v)
+		}
+		if v := ed.str("match"); v != "" {
+			f = append(f, "--match-payload="+v)
+		}
+		if v := ed.str("warn"); v != "" {
+			f = append(f, "--response-warn="+v)
+		}
+		if v := ed.str("critical"); v != "" {
+			f = append(f, "--response-critical="+v)
+		}
+		return m.runCheck("Check of requests to "+ed.str("subject"), f...)
+	})
+}
+
+// checkCredential checks a credential file, the context's own by default.
+func (m *Model) checkCredential() tea.Cmd {
+	creds := m.settings.Creds
+	if creds == "" && m.store != nil {
+		creds = m.store.Context.Creds
+	}
+	fields := []*field{
+		section("Credential check (nats server check credential)"),
+		textField("file", "Credential file", creds, "", "required", existingFile),
+		textField("warn", "Validity warn", "", "warn when it expires sooner than this", "(none)", cli.ValidDuration),
+		textField("critical", "Validity critical", "", "critical when it expires sooner than this", "(none)", cli.ValidDuration),
+		boolField("expiry", "Require an expiry", false, "a credential that never expires is a failure"),
+	}
+	return m.openEditor(newEditor("Check a credential", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+		f := []string{"server", "check", "credential", "--credential=" + expandPath(ed.str("file"))}
+		if v := ed.str("warn"); v != "" {
+			f = append(f, "--validity-warn="+v)
+		}
+		if v := ed.str("critical"); v != "" {
+			f = append(f, "--validity-critical="+v)
+		}
+		if ed.on("expiry") {
+			f = append(f, "--require-expiry")
+		}
+		return m.runCheck("Check of "+ed.str("file"), f...)
+	})
+}
+
+// tryMapping runs nats server mappings on a source pattern, a destination
+// pattern and a subject, and shows the transformed subject.
+func (m *Model) tryMapping() tea.Cmd {
+	fields := []*field{
+		section("Subject mapping (nats server mappings)"),
+		textField("source", "Source pattern", "orders.*", "the pattern the subject is matched against", "required", nonEmpty("a source pattern")),
+		textField("dest", "Destination pattern", "new.{{wildcard(1)}}", "the pattern the subject becomes; {{wildcard(n)}}, {{partition(n,…)}}, {{split(n,sep)}}…", "required", nonEmpty("a destination pattern")),
+		textField("subject", "Subject", "orders.paris", "the subject to transform", "required", nonEmpty("a subject")),
+	}
+	return m.openEditor(newEditor("Try a subject mapping", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+		return m.runText("Mapping of "+ed.str("subject"), "server", "mappings", ed.str("source"), ed.str("dest"), ed.str("subject"))
+	})
 }
 
 func (m *Model) reports(n node) tea.Cmd {
@@ -1165,6 +1369,8 @@ func (m *Model) reports(n node) tea.Cmd {
 		{"consumer report      — the consumers of a stream with their state", "consumers"},
 		{"account report statistics   — server statistics for this account", "stats"},
 		{"stream find          — streams matching criteria (empty, idle, mirrored…)", "find"},
+		{"consumer find        — consumers of a stream matching criteria (pull, idle, pending…)", "findconsumer"},
+		{"stream gaps          — gaps in a stream's sequence that would show as deleted messages", "gaps"},
 	}
 	if n.kind == kService {
 		items = append(items, pickItem{"service info " + n.svc.Info.Name + "   — endpoints of the service", "svcinfo"}, pickItem{"service stats " + n.svc.Info.Name + "  — request counts and timings", "svcstats"})
@@ -1187,6 +1393,25 @@ func (m *Model) reports(n node) tea.Cmd {
 			return m.openForm(inputForm("nats stream find", "Flags of nats stream find: --empty, --idle 1h, --created 7d, --mirrored, --sourced, --subject x.>, --expression '…'", "--empty", &m.formVals.str, nil), func(m *Model) tea.Cmd {
 				return m.runText("nats stream find "+m.formVals.str, append([]string{"stream", "find"}, strings.Fields(m.formVals.str)...)...)
 			}, nil)
+		case "findconsumer":
+			find := func(m *Model, st *cli.Stream) tea.Cmd {
+				m.formVals.str = "--pull"
+				return m.openForm(inputForm("nats consumer find "+st.Name(), "Flags of nats consumer find: --pull, --push, --bound, --idle 1h, --created 7d, --pending 100, --ack-pending 10, --waiting 5, --replicas 1, --pinned, --invert, --expression '…'", "--pull", &m.formVals.str, nil), func(m *Model) tea.Cmd {
+					return m.runText("nats consumer find "+st.Name()+" "+m.formVals.str, append([]string{"consumer", "find", st.Name()}, strings.Fields(m.formVals.str)...)...)
+				}, nil)
+			}
+			if st := n.streamOf(); st != nil {
+				return find(m, st)
+			}
+			return m.pickStream("Find consumers of which stream?", find)
+		case "gaps":
+			gaps := func(m *Model, st *cli.Stream) tea.Cmd {
+				return m.runText("Gaps of "+st.Name()+" (nats stream gaps)", "stream", "gaps", st.Name(), "-f", "--no-progress")
+			}
+			if st := n.streamOf(); st != nil {
+				return gaps(m, st)
+			}
+			return m.pickStream("Gaps of which stream?", gaps)
 		case "svcinfo":
 			return m.runText("Service "+n.svc.Info.Name, "service", "info", n.svc.Info.Name, n.svc.Info.ID)
 		case "svcstats":

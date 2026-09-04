@@ -699,3 +699,72 @@ func TestServiceDetailsShowStats(t *testing.T) {
 		t.Error("stats asked twice")
 	}
 }
+
+func TestMonitoringChecksAndReports(t *testing.T) {
+	m, _ := testModel(t)
+	press(m, "down", "down") // the stream
+	if m.selected().kind != kStream {
+		t.Fatalf("not on the stream: %v", m.selected().kind)
+	}
+	// the check of the selected stream comes first in the menu
+	press(m, "M")
+	if m.scr != scrPicker || !strings.Contains(m.View(), "server check stream ORDERS") {
+		t.Fatalf("monitor menu:\n%s", m.View())
+	}
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrText || !strings.Contains(m.View(), "ORDERS: OK") {
+		t.Fatalf("stream check: %v %s\n%s", m.scr, m.errMsg, m.View())
+	}
+	press(m, "esc")
+	// the same on its consumer
+	press(m, "right", "down")
+	if m.selected().kind != kConsumer {
+		t.Fatalf("not on the consumer: %v", m.selected().kind)
+	}
+	press(m, "M")
+	if !strings.Contains(m.View(), "server check consumer worker") {
+		t.Fatalf("monitor menu on a consumer:\n%s", m.View())
+	}
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrText || !strings.Contains(m.View(), "ORDERS_worker: OK") {
+		t.Fatalf("consumer check: %v %s\n%s", m.scr, m.errMsg, m.View())
+	}
+	press(m, "esc")
+	// a mapping is tried through an editor
+	press(m, "M")
+	for _, r := range "mappings" {
+		press(m, string(r))
+	}
+	press(m, "enter")
+	if m.scr != scrEditor {
+		t.Fatalf("mapping editor: %v", m.scr)
+	}
+	runCmd(t, m, press(m, "ctrl+s"))
+	if m.scr != scrText || !strings.Contains(m.View(), "new.paris") {
+		t.Fatalf("mapping: %v %s\n%s", m.scr, m.errMsg, m.View())
+	}
+	press(m, "esc")
+	// gaps of the stream the consumer belongs to
+	press(m, "T")
+	for _, r := range "gaps" {
+		press(m, string(r))
+	}
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrText || !strings.Contains(m.View(), "No deleted messages in ORDERS") {
+		t.Fatalf("gaps: %v %s\n%s", m.scr, m.errMsg, m.View())
+	}
+	press(m, "esc")
+	// consumer find with its default flag
+	press(m, "T")
+	for _, r := range "consumer find" {
+		press(m, string(r))
+	}
+	press(m, "enter")
+	if m.scr != scrForm {
+		t.Fatalf("consumer find form: %v", m.scr)
+	}
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrText || !strings.Contains(m.View(), "worker") {
+		t.Fatalf("consumer find: %v %s\n%s", m.scr, m.errMsg, m.View())
+	}
+}

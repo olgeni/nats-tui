@@ -650,7 +650,7 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "I":
 		return m, m.accountInfo()
 	case "M":
-		return m, m.monitor()
+		return m, m.monitor(n)
 	case "T":
 		return m, m.reports(n)
 	case "C":
