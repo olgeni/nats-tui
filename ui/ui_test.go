@@ -768,3 +768,31 @@ func TestMonitoringChecksAndReports(t *testing.T) {
 		t.Fatalf("consumer find: %v %s\n%s", m.scr, m.errMsg, m.View())
 	}
 }
+
+func TestAccountBackupAndConsumerCopyKeys(t *testing.T) {
+	m, _ := testModel(t)
+	// b on the context row backs up the account
+	press(m, "b")
+	if m.scr != scrEditor || !strings.Contains(m.View(), "every stream of the account") {
+		t.Fatalf("account backup editor: %v\n%s", m.scr, m.View())
+	}
+	press(m, "esc")
+	// y on a consumer copies it
+	press(m, "down", "down", "right", "down")
+	if m.selected().kind != kConsumer {
+		t.Fatalf("not on the consumer: %v", m.selected().kind)
+	}
+	press(m, "y")
+	if m.scr != scrEditor || m.editor.get("name").text != "worker_COPY" {
+		t.Fatalf("consumer copy editor: %v\n%s", m.scr, m.View())
+	}
+	press(m, "ctrl+s")
+	if m.scr != scrPlan || !strings.Contains(m.View(), "consumer copy ORDERS worker worker_COPY") {
+		t.Fatalf("copy plan:\n%s", m.View())
+	}
+	runCmd(t, m, press(m, "enter"))
+	runCmd(t, m, press(m, "enter"))
+	if m.scr != scrMain || m.store.Stream("ORDERS").ConsumerCount() != 2 {
+		t.Errorf("after copy: %v consumers %d", m.scr, m.store.Stream("ORDERS").ConsumerCount())
+	}
+}

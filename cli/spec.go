@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -408,6 +410,58 @@ func BackupStream(name, dir string, consumers bool) *Plan {
 func RestoreStream(dir string) *Plan {
 	p := &Plan{Title: "Restore stream from " + dir}
 	p.AddDanger("restore the stream (it must not exist yet)", "stream", "restore", dir, "--no-progress")
+	return p
+}
+
+// BackupAccount writes every stream of the account to a directory, one
+// subdirectory per stream.
+func BackupAccount(dir string, consumers, check bool) *Plan {
+	p := &Plan{Title: "Backup every stream to " + dir}
+	args := []string{"account", "backup", dir, "-f"}
+	if consumers {
+		args = append(args, "--consumers")
+	} else {
+		args = append(args, "--no-consumers")
+	}
+	if check {
+		args = append(args, "--check")
+	}
+	p.Add("write one backup per stream", args...)
+	return p
+}
+
+// RestoreAccount restores every stream backup found in a directory.
+func RestoreAccount(dir string) *Plan {
+	p := &Plan{Title: "Restore every stream from " + dir}
+	p.AddDanger("restore each stream of the backup (none may exist yet)", "account", "restore", dir)
+	return p
+}
+
+// BackupKind tells what a directory holds: a stream backup (backup.json
+// and the data file), an account backup (one stream backup per
+// subdirectory), or neither.
+func BackupKind(dir string) string {
+	if _, err := os.Stat(filepath.Join(dir, "backup.json")); err == nil {
+		return "stream"
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			if _, err := os.Stat(filepath.Join(dir, e.Name(), "backup.json")); err == nil {
+				return "account"
+			}
+		}
+	}
+	return ""
+}
+
+// CopyConsumer creates a consumer with the configuration of another.
+func CopyConsumer(stream, from, to string) *Plan {
+	p := &Plan{Title: "Copy consumer " + from + " to " + to}
+	p.Add("create the consumer from the configuration of the source", "consumer", "copy", stream, from, to)
 	return p
 }
 

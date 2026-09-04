@@ -458,3 +458,36 @@ func contains(l []string, s string) bool {
 	}
 	return false
 }
+
+func TestAccountBackupRestoreAndConsumerCopy(t *testing.T) {
+	s, x := testnats.Setup(t)
+	c := connect(t, s)
+	testnats.Must(t, x, "stream", "add", "ORDERS", "--subjects=orders.>", "--defaults")
+	testnats.Must(t, x, "stream", "add", "EVENTS", "--subjects=events.>", "--defaults")
+	testnats.Must(t, x, "consumer", "add", "ORDERS", "worker", "--pull", "--filter=orders.new", "--defaults")
+	testnats.Must(t, x, "pub", "orders.new", "one", "--count=2")
+	run(t, x, cli.CopyConsumer("ORDERS", "worker", "worker2"))
+	cons, err := c.Consumers("ORDERS")
+	if err != nil || len(cons) != 2 || cons[1].Name() != "worker2" || cons[1].Info.Config.FilterSubject != "orders.new" {
+		t.Fatalf("consumer copy: %v %v", cons, err)
+	}
+	dir := filepath.Join(t.TempDir(), "acct")
+	run(t, x, cli.BackupAccount(dir, true, false))
+	if cli.BackupKind(dir) != "account" || cli.BackupKind(filepath.Join(dir, "ORDERS")) != "stream" || cli.BackupKind(t.TempDir()) != "" {
+		t.Errorf("backup kinds: %q %q", cli.BackupKind(dir), cli.BackupKind(filepath.Join(dir, "ORDERS")))
+	}
+	run(t, x, cli.DeleteStream("ORDERS"))
+	run(t, x, cli.DeleteStream("EVENTS"))
+	run(t, x, cli.RestoreAccount(dir))
+	st, err := c.LoadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Streams) != 2 || st.Stream("ORDERS") == nil || st.Stream("ORDERS").Info.State.Msgs != 2 {
+		t.Errorf("after restore: %+v", st.Streams)
+	}
+	cons, _ = c.Consumers("ORDERS")
+	if len(cons) != 2 {
+		t.Errorf("consumers after restore: %d", len(cons))
+	}
+}

@@ -661,9 +661,13 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if st := n.streamOf(); st != nil {
 			return m, m.backupStream(st)
 		}
+		return m, m.backupAccount()
 	case "B":
-		return m, m.restoreStream()
+		return m, m.restoreBackup()
 	case "y":
+		if n.kind == kConsumer {
+			return m, m.copyConsumer(n.cons)
+		}
 		if st := n.streamOf(); st != nil {
 			return m, m.copyStream(st)
 		}

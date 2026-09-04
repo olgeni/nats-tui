@@ -1435,20 +1435,68 @@ func (m *Model) backupStream(st *cli.Stream) tea.Cmd {
 	})
 }
 
-func (m *Model) restoreStream() tea.Cmd {
+// backupAccount writes every stream of the account, one directory each.
+func (m *Model) backupAccount() tea.Cmd {
+	if !m.needJetStream() {
+		return nil
+	}
+	fields := []*field{
+		section("Backup every stream of the account"),
+		infoField("Streams", fmt.Sprintf("%d, one subdirectory each", len(m.store.Streams))),
+		textField("dir", "Directory", "./nats-backup", "written by nats account backup", "required", nonEmpty("a directory")),
+		boolField("consumers", "Include the consumers", true, ""),
+		boolField("check", "Check each stream first", false, "nats account backup --check: the health check before the backup"),
+	}
+	return m.openEditor(newEditor("Backup the account", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+		return m.runPlan(cli.BackupAccount(expandPath(ed.str("dir")), ed.on("consumers"), ed.on("check")), nil)
+	})
+}
+
+// restoreBackup restores a directory: a stream backup, or an account
+// backup holding one stream backup per subdirectory.
+func (m *Model) restoreBackup() tea.Cmd {
 	if !m.needJetStream() {
 		return nil
 	}
 	m.formVals.str = ""
-	return m.openForm(inputForm("Restore a stream from", "The directory a backup was written to; the stream must not exist.", "./backup", &m.formVals.str, func(s string) error {
+	return m.openForm(inputForm("Restore from", "The directory a stream backup (b on a stream) or an account backup (b elsewhere) was written to; the streams must not exist.", "./backup", &m.formVals.str, func(s string) error {
 		s = expandPath(strings.TrimSpace(s))
 		if st, err := os.Stat(s); err != nil || !st.IsDir() {
 			return fmt.Errorf("not a directory: %s", s)
 		}
+		if cli.BackupKind(s) == "" {
+			return fmt.Errorf("no backup.json in %s or its subdirectories", s)
+		}
 		return nil
 	}), func(m *Model) tea.Cmd {
-		return m.runPlan(cli.RestoreStream(expandPath(strings.TrimSpace(m.formVals.str))), nil)
+		dir := expandPath(strings.TrimSpace(m.formVals.str))
+		if cli.BackupKind(dir) == "account" {
+			return m.runPlan(cli.RestoreAccount(dir), nil)
+		}
+		return m.runPlan(cli.RestoreStream(dir), nil)
 	}, nil)
+}
+
+// copyConsumer creates a consumer with the configuration of another.
+func (m *Model) copyConsumer(c *cli.Consumer) tea.Cmd {
+	fields := []*field{
+		section("Copy the configuration of " + c.Name()),
+		infoField("Copied", "the configuration only: the copy starts from its deliver policy, not from where the source is"),
+		textField("name", "New consumer", c.Name()+"_COPY", "", "required", func(s string) error {
+			if err := validName(s); err != nil {
+				return err
+			}
+			for _, o := range c.Stream.Consumers {
+				if o.Name() == strings.TrimSpace(s) {
+					return fmt.Errorf("consumer %s already exists", strings.TrimSpace(s))
+				}
+			}
+			return nil
+		}),
+	}
+	return m.openEditor(newEditor("Copy consumer "+c.Name(), fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+		return m.runPlan(cli.CopyConsumer(c.Stream.Name(), c.Name(), ed.str("name")), nil)
+	})
 }
 
 func (m *Model) copyStream(st *cli.Stream) tea.Cmd {
