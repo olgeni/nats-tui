@@ -1,0 +1,2628 @@
+nats 0.4.0
+
+===== commands =====
+
+help [<command>...]
+account info
+account report connections [<flags>]
+account report statistics
+account backup [<flags>] <target>
+account restore [<flags>] <directory>
+account tls [<flags>]
+audit analyze [<flags>] [<archive>]
+audit checks [<flags>]
+audit gather [<flags>]
+auth operator add [<flags>] [<name>]
+auth operator info [<flags>] [<name>]
+auth operator list [<flags>]
+auth operator edit [<flags>] [<name>]
+auth operator import JWT [FILE...]
+auth operator select [<name>]
+auth operator backup [<flags>] <name> <output>
+auth operator restore [<flags>] <name> <input>
+auth operator keys list [<name>]
+auth operator keys add [<name>]
+auth operator keys rm [<flags>] [<name>] [<key>]
+auth account add [<flags>] [<account>]
+auth account info [<flags>] [<account>]
+auth account edit [<flags>] [<account>]
+auth account ls [<flags>] [<operator>]
+auth account push [<flags>] [<account>]
+auth account query [<flags>] <account> [<output>]
+auth account imports add [<flags>] <name> <subject> [<account>]
+auth account imports info [<flags>] [<subject>] [<account>]
+auth account imports edit [<flags>] <subject> [<account>]
+auth account imports ls [<account>] [<operator>]
+auth account imports rm [<flags>] <subject> [<account>]
+auth account exports add [<flags>] <name> <subject> [<account>]
+auth account exports info [<flags>] [<subject>] [<account>]
+auth account exports edit [<flags>] <subject> [<account>]
+auth account exports ls [<flags>] [<account>]
+auth account exports rm [<flags>] <subject> [<account>]
+auth account keys add [<flags>] [<account>] [<role>]
+auth account keys info [<flags>] [<account>] [<key>]
+auth account keys ls [<flags>] [<account>]
+auth account keys rm [<flags>] [<account>]
+auth account mappings add [<flags>] [<account>] [<source>] [<target>] [<weight>] [<cluster>]
+auth account mappings ls [<flags>] [<account>]
+auth account mappings rm [<flags>] [<account>] [<source>]
+auth account mappings info [<flags>] [<account>] [<source>]
+auth user add [<flags>] <name> [<account>]
+auth user info [<flags>] [<name>] [<account>]
+auth user edit [<flags>] [<name>] [<account>]
+auth user ls [<flags>] [<account>]
+auth user rm [<flags>] [<name>] [<account>]
+auth user credential [<flags>] <file> [<name>] [<account>]
+auth nkey gen [<flags>] <type>
+auth nkey show <key>
+auth nkey sign <file> <key>
+auth nkey verify <file> <signature> <key>
+auth nkey seal [<flags>] <file> <key> <recipient>
+auth nkey unseal [<flags>] <file> <key> <sender>
+bench pub [<flags>] <subject>
+bench sub [<flags>] <subject>
+bench service request [<flags>] <subject>
+bench service serve <subject>
+bench js pub sync [<flags>] <subject>
+bench js pub async [<flags>] <subject>
+bench js pub batch [<flags>] <subject>
+bench js ordered [<flags>]
+bench js consume [<flags>]
+bench js fetch [<flags>]
+bench js get sync
+bench js get batch [<flags>]
+bench kv put [<flags>]
+bench kv get [<flags>]
+bench oldjs ordered [<flags>] <subject>
+bench oldjs push [<flags>] <subject>
+bench oldjs pull [<flags>] <subject>
+consumer add [<flags>] [<stream>] [<consumer>]
+consumer edit [<flags>] [<stream>] [<consumer>]
+consumer ls [<flags>] [<stream>]
+consumer find [<flags>] [<stream>]
+consumer info [<flags>] [<stream>] [<consumer>]
+consumer state [<flags>] [<stream>] [<consumer>]
+consumer rm [<flags>] [<stream>] [<consumer>]
+consumer reset [<flags>] [<stream>] [<consumer>]
+consumer copy [<flags>] <stream> <source> <destination>
+consumer next [<flags>] <stream> <consumer>
+consumer graph [<stream>] [<consumer>]
+consumer pause [<flags>] [<stream>] [<consumer>] [TIME]
+consumer unpin [<flags>] [<stream>] [<consumer>] [<group>]
+consumer resume [<flags>] [<stream>] [<consumer>]
+consumer report [<flags>] [<stream>]
+consumer cluster step-down [<flags>] [<stream>] [<consumer>]
+consumer cluster balance [<flags>] [<stream>]
+context add [<flags>] <name>
+context copy [<flags>] <source> <name>
+context edit <name>
+context ls [<flags>]
+context rm [<flags>] <name>
+context select [<name>]
+context unselect
+context info [<flags>] [<name>]
+context validate [<flags>] [<name>]
+context previous
+counter get [<flags>] <subject>
+counter view [<flags>] <subject>
+counter increment [<flags>] <subject> [<value>]
+counter list [<flags>] [<subject>]
+errors ls [<flags>] [<match>] [<sort>]
+errors lookup <code>
+errors edit <file> [<code>]
+errors validate [<file>]
+events [<flags>]
+kv add [<flags>] <bucket>
+kv edit [<flags>] <bucket>
+kv put <bucket> <key> [<value>]
+kv get [<flags>] <bucket> <key>
+kv create [<flags>] <bucket> <key> [<value>]
+kv update <bucket> <key> <value> <revision>
+kv del [<flags>] <bucket> [<key>]
+kv purge [<flags>] <bucket> <key>
+kv history <bucket> <key>
+kv revert [<flags>] <bucket> <key> <revision>
+kv info [<bucket>]
+kv watch [<flags>] <bucket> [<key>]
+kv ls [<flags>] [<bucket>] [<key>]
+kv compact [<flags>] <bucket>
+latency [<flags>]
+object add [<flags>] <bucket>
+object edit [<flags>] <bucket>
+object put [<flags>] <bucket> [<file>]
+object del [<flags>] <bucket> [<file>]
+object get [<flags>] <bucket> <file>
+object info [<bucket>] [<file>]
+object ls [<flags>] [<bucket>]
+object seal [<flags>] <bucket>
+object watch <bucket>
+plugins register [<flags>] <name> <command>
+publish [<flags>] <subject> [<body>]
+reply [<flags>] <subject> [<body>]
+request [<flags>] <subject> [<body>]
+rtt [<flags>] [<iterations>]
+schema search [<flags>] [<pattern>]
+schema info [<flags>] <schema>
+schema validate [<flags>] <schema> <file>
+schema request [<flags>] <subject> [<body>]
+server account info [<flags>] <account>
+server account purge [<flags>] NAME
+server check connection [<flags>]
+server check stream [<flags>]
+server check consumer [<flags>]
+server check message [<flags>]
+server check meta [<flags>]
+server check request [<flags>]
+server check jetstream [<flags>]
+server check server [<flags>]
+server check kv [<flags>]
+server check credential [<flags>]
+server cluster balance [<flags>] [<duration>]
+server cluster step-down [<flags>]
+server cluster peer-remove [<flags>] <name>
+server config reload [<flags>] <id>
+server generate [<flags>] <target>
+server graph [<flags>] <server>
+server info [<server>]
+server list [<flags>] [<expect>]
+server mappings [<source>] [<dest>] [<subject>]
+server passwd [<flags>]
+server ping [<flags>] [<expect>]
+server report accounts [<flags>] [<account>] [<limit>]
+server report connections [<flags>] [<limit>]
+server report cpu [<flags>] [<limit>]
+server report gateways [<flags>] [<limit>]
+server report health [<flags>] [<limit>]
+server report jetstream [<flags>] [<limit>]
+server report leafnodes [<flags>] [<limit>]
+server report mem [<flags>] [<limit>]
+server report routes [<flags>] [<limit>]
+server report downgrade [<flags>] <api>
+server request accounts [<flags>] [<wait>]
+server request connections [<flags>] [<wait>]
+server request gateways [<flags>] [<wait>] [NAME]
+server request ipqueue [<flags>]
+server request jetstream-health [<flags>] [<wait>]
+server request jetstream [<flags>] [<wait>]
+server request kick ID SERVER_ID
+server request leafnodes [<flags>] [<wait>]
+server request profile [<flags>] <profile> [<dir>]
+server request raft [<flags>]
+server request routes [<flags>] [<wait>]
+server request subscriptions [<flags>] [<wait>]
+server request variables [<wait>]
+server watch api requests [<flags>]
+server watch accounts [<flags>]
+server watch jetstream [<flags>]
+server watch servers [<flags>]
+service list [<flags>] [NAME]
+service info [<flags>] <service> [<id>]
+service stats [<flags>] <service> [<id>]
+service ping [<service>]
+service request [<flags>] <service> <endpoint> [<payload>]
+service serve [<flags>] <name>
+stream add [<flags>] [<stream>]
+stream ls [<flags>]
+stream report [<flags>]
+stream find [<flags>]
+stream info [<flags>] [<stream>]
+stream state [<flags>] [<stream>]
+stream subjects [<flags>] [<stream>] [<filter>]
+stream edit [<flags>] [<stream>]
+stream rm [<flags>] [<stream>]
+stream purge [<flags>] [<stream>]
+stream copy [<flags>] <source> <destination>
+stream rmm [<flags>] [<stream>] [<id>]
+stream view [<flags>] [<stream>] [<size>]
+stream get [<flags>] [<stream>] [<id>]
+stream backup [<flags>] <stream> <target>
+stream restore [<flags>] <file>
+stream seal [<flags>] <stream>
+stream gaps [<flags>] [<stream>]
+stream graph [<stream>]
+stream cluster step-down [<flags>] [<stream>]
+stream cluster balance [<flags>]
+stream cluster peer-remove [<flags>] [<stream>] [<peer>]
+subscribe [<flags>] [<subjects>...]
+top [<flags>] <name>
+trace [<flags>] <subject> [<payload>]
+
+===== nats --help-long =====
+
+usage: nats [<flags>] <command> [<args> ...]
+
+NATS Utility
+
+NATS Server and JetStream administration.
+
+See 'nats cheat' for a quick cheatsheet of commands
+
+Flags:
+  -h, --help                    Show context-sensitive help
+      --version                 Show application version.
+  -s, --server=URL              NATS server urls ($NATS_URL)
+      --user=USER               Username or Token ($NATS_USER)
+      --password=PASSWORD       Password ($NATS_PASSWORD)
+      --token=TOKEN             Token ($NATS_TOKEN)
+      --connection-name=NAME    Nickname to use for the underlying NATS
+                                Connection
+      --creds=FILE              User credentials ($NATS_CREDS)
+      --nkey=FILE               User NKEY ($NATS_NKEY)
+      --jwt=JWT                 User JWT ($NATS_JWT)
+      --seed=SEED               User seed ($NATS_SEED)
+      --tlscert=FILE            TLS public certificate ($NATS_CERT)
+      --tlskey=FILE             TLS private key ($NATS_KEY)
+      --tlsca=FILE              TLS certificate authority chain ($NATS_CA)
+      --[no-]tlsfirst           Perform TLS handshake before expecting the
+                                server greeting
+      --timeout=5s              Time to wait on responses from NATS
+                                ($NATS_TIMEOUT)
+      --socks-proxy=PROXY       SOCKS5 proxy for connecting to NATS server
+                                ($NATS_SOCKS_PROXY)
+      --js-api-prefix=PREFIX    Subject prefix for access to JetStream API
+      --js-event-prefix=PREFIX  Subject prefix for access to JetStream
+                                Advisories
+      --js-domain=DOMAIN        JetStream domain to access
+      --inbox-prefix=PREFIX     Custom inbox prefix to use for inboxes
+      --colors=SCHEME           Sets a color scheme to use ($NATS_COLOR)
+      --context=NAME            Configuration context ($NATS_CONTEXT)
+      --trace                   Trace API interactions
+      --no-context              Disable the selected context
+
+Commands:
+help [<command>...]
+    Show help.
+
+
+account info
+    Account information
+
+
+account report connections [<flags>]
+    Report on connections
+
+        --sort=subs             Sort by a specific property
+                                (in-bytes,out-bytes,in-msgs,out-msgs,uptime,cid,subs)
+        --top=1000              Limit results to the top results
+        --subject=SUBJECT       Limits responses only to those connections with
+                                matching subscription interest
+        --username=USERNAME     Limits responses only to those connections for a
+                                specific authentication username
+    -R, --reverse               Reverse sort connections
+        --state=open            Limits responses only to those connections that
+                                are in a specific state (open, closed, all)
+        --closed-reason=REASON  Filter results based on a closed reason
+
+account report statistics
+    Report on server statistics
+
+
+account backup [<flags>] <target>
+    Creates a backup of all JetStream Streams over the NATS network
+
+        --check              Checks the Stream for health prior to backup
+        --[no-]consumers     Enable or disable consumer backups
+    -f, --force              Perform backup without prompting
+    -w, --critical-warnings  Treat warnings as failures
+
+account restore [<flags>] <directory>
+    Restore an account backup over the NATS network
+
+    --cluster=CLUSTER  Place the stream in a specific cluster
+    --tag=TAG ...      Place the stream on servers that has specific tags (pass
+                       multiple times)
+
+account tls [<flags>]
+    Report TLS chain for connected server
+
+    --expire-warn=1w  Warn about certs expiring this soon, 0 to disable
+    --ocsp            Report OCSP information, if any
+    --[no-]pem        Show PEM Certificate blocks (true)
+
+audit analyze [<flags>] [<archive>]
+    perform checks against an archive created by the 'gather' subcommand
+
+        --max-examples=5  How many example issues to display for each failed
+                          check (0 for unlimited)
+        --skip=CODE ...   Prevents checks from running by check code
+        --load=FILE       Loads a saved report
+        --save=FILE       Stores the analyze result to a file
+    -f, --force           Force overwriting existing report files
+    -j, --json            Output JSON format
+        --markdown        Output Markdown format
+        --verbose         Log verbosely
+
+audit checks [<flags>]
+    List configured audit checks
+
+    --json  Produce JSON output
+
+audit gather [<flags>]
+    capture a variety of data from a deployment into an archive file
+
+    -o, --output=OUTPUT           output file path of generated archive
+        --[no-]progress           Display progress messages during gathering
+        --cluster=CLUSTER         Limit audit to servers from the named cluster
+        --[no-]server-endpoints   Capture monitoring endpoints for each server
+        --[no-]server-profiles    Capture profiles for each server
+        --[no-]account-endpoints  Capture monitoring endpoints for each account
+        --[no-]streams            Capture state of each stream
+        --[no-]consumers          Capture state of each stream consumers
+        --[no-]details            Capture detailed server information from the
+                                  audit
+
+auth operator add [<flags>] [<name>]
+    Adds a new Operator
+
+    --service=URL ...     URLs for the Operator services
+    --account-server=URL  URL for the account server
+    --[no-]signing-key    Creates a signing key for this Operator
+    --tags=TAGS ...       Tags to assign to this Operator
+
+auth operator info [<flags>] [<name>]
+    Show Operator information
+
+    -j, --json  Produce JSON output
+
+auth operator list [<flags>]
+    List Operators
+
+    --names  Show just the Operator names
+
+auth operator edit [<flags>] [<name>]
+    Edit an Operator
+
+    --account-server=URL   URL for the Account Server
+    --service=URL ...      URLs for the Operator Services
+    --tags=TAGS ...        Tags to add to this Operator
+    --no-tags=NO-TAGS ...  Tags to remove from the Operator
+
+auth operator import JWT [FILE...]
+    Imports an operator
+
+
+auth operator select [<name>]
+    Selects the default operator
+
+
+auth operator backup [<flags>] <name> <output>
+    Creates a backup of an operator
+
+    --key=KEY  Curve or X25519 NKey to encrypt with
+
+auth operator restore [<flags>] <name> <input>
+    Restores an operator from a backup
+
+    --key=KEY  Curve or X25519 NKey to decrypt with
+
+auth operator keys list [<name>]
+    List Signing Keys
+
+
+auth operator keys add [<name>]
+    Adds a new Signing Key
+
+
+auth operator keys rm [<flags>] [<name>] [<key>]
+    Removes a Signing Key
+
+    -f, --force  Remove without prompting
+
+auth account add [<flags>] [<account>]
+    Adds a new Account
+
+    --operator=OPERATOR           Operator to add the account to
+    --key=KEY                     The public key to use when signing the user
+    --[no-]bearer                 Allows bearer tokens
+    --connections=-1              Maximum allowed connections
+    --expiry=DURATION             How long this account should be valid for as a
+                                  duration
+    --exports=-1                  Maximum allowed exports
+    --imports=-1                  Maximum allowed imports
+    --[no-]jetstream              Enables JetStream
+    --js-consumers=-1             Sets the maximum Consumers any Stream in the
+                                  account can have
+    --js-disk=BYTES               Sets a Disk Storage quota
+    --js-disk-stream=BYTES        Sets the maximum size a Disk Storage stream
+                                  may be
+    --js-max-pending=MESSAGES     Default Max Ack Pending for Tier 0 limits
+    --js-memory=BYTES             Sets a Memory Storage quota
+    --js-memory-stream=BYTES      Sets the maximum size a Memory Storage stream
+                                  may be
+    --js-stream-size-required     Requires Streams to have a maximum size
+                                  declared
+    --js-streams=-1               Sets the maximum Streams the account can have
+    --js-cluster-traffic=ACCOUNT  Sets the account used for JetStream cluster
+                                  traffic
+    --leafnodes=-1                Maximum allowed Leafnode connections
+    --payload=BYTES               Maximum allowed payload
+    --subscriptions=-1            Maximum allowed subscriptions
+    --tags=TAGS ...               Tags to assign to this Account
+    --defaults                    Accept default values without prompting
+
+auth account info [<flags>] [<account>]
+    Show Account information
+
+        --operator=OPERATOR  Operator hosting the account
+    -j, --json               Produce JSON output
+
+auth account edit [<flags>] [<account>]
+    Edit Account settings
+
+    --operator=OPERATOR           Operator to add the account to
+    --[no-]bearer                 Allows bearer tokens
+    --connections=-1              Maximum allowed connections
+    --expiry=DURATION             How long this account should be valid for as a
+                                  duration
+    --exports=-1                  Maximum allowed exports
+    --imports=-1                  Maximum allowed imports
+    --[no-]jetstream              Enables JetStream
+    --js-consumers=-1             Sets the maximum Consumers any Stream in the
+                                  account can have
+    --js-disk=BYTES               Sets a Disk Storage quota
+    --js-disk-stream=BYTES        Sets the maximum size a Disk Storage stream
+                                  may be
+    --js-max-pending=MESSAGES     Default Max Ack Pending for Tier 0 limits
+    --js-memory=BYTES             Sets a Memory Storage quota
+    --js-memory-stream=BYTES      Sets the maximum size a Memory Storage stream
+                                  may be
+    --js-stream-size-required     Requires Streams to have a maximum size
+                                  declared
+    --js-streams=-1               Sets the maximum Streams the account can have
+    --js-cluster-traffic=ACCOUNT  Sets the account used for JetStream cluster
+                                  traffic
+    --leafnodes=-1                Maximum allowed Leafnode connections
+    --payload=BYTES               Maximum allowed payload
+    --subscriptions=-1            Maximum allowed subscriptions
+    --tags=TAGS ...               Tags to assign to this Account
+
+auth account ls [<flags>] [<operator>]
+    List Accounts
+
+    --names  Show just the Account names
+
+auth account push [<flags>] [<account>]
+    Push the Account to the NATS Resolver
+
+    --operator=OPERATOR  Operator to act on
+    --show               Show the Account JWT before pushing
+
+auth account query [<flags>] <account> [<output>]
+    Pull the Account from the NATS Resolver and view it
+
+    --operator=OPERATOR  Operator to act on
+
+auth account imports add [<flags>] <name> <subject> [<account>]
+    Adds an Import
+
+    --source=SOURCE      The account public key to import from
+    --local=LOCAL        The local Subject to use for the import
+    --share              Shares connection information with the exporter
+    --traceable          Enable tracing messages across Stream imports
+    --service            Sets the import to be a Service rather than a Stream
+    --operator=OPERATOR  Operator hosting the account
+
+auth account imports info [<flags>] [<subject>] [<account>]
+    Show information for an Import
+
+        --operator=OPERATOR  Operator hosting the account
+    -j, --json               Produce JSON output
+
+auth account imports edit [<flags>] <subject> [<account>]
+    Edits an Import
+
+    --local=LOCAL        The local Subject to use for the import
+    --share              Shares connection information with the exporter
+    --traceable          Enable tracing messages across Stream imports
+    --operator=OPERATOR  Operator hosting the account
+
+auth account imports ls [<account>] [<operator>]
+    List Imports
+
+
+auth account imports rm [<flags>] <subject> [<account>]
+    Removes an Import
+
+        --operator=OPERATOR  Operator hosting the account
+    -f, --force              Removes without prompting
+
+auth account exports add [<flags>] <name> <subject> [<account>]
+    Adds an Export
+
+    --operator=OPERATOR        Operator hosting the account
+    --description=DESCRIPTION  Friendly description
+    --url=URL                  Sets a URL for further information
+    --token-position=TOKEN-POSITION  
+                               The position to use for the Account name
+    --advertise                Advertise the Export
+    --service                  Sets the Export to be a Service rather than a
+                               Stream
+
+auth account exports info [<flags>] [<subject>] [<account>]
+    Show information for an Export
+
+        --operator=OPERATOR  Operator hosting the account
+    -j, --json               Produce JSON output
+
+auth account exports edit [<flags>] <subject> [<account>]
+    Edits an Export
+
+    --operator=OPERATOR        Operator hosting the account
+    --description=DESCRIPTION  Friendly description
+    --url=URL                  Sets a URL for further information
+    --token-position=TOKEN-POSITION  
+                               The position to use for the Account name
+    --[no-]advertise           Advertise the Export
+
+auth account exports ls [<flags>] [<account>]
+    List Exports
+
+    --operator=OPERATOR  Operator to act on
+
+auth account exports rm [<flags>] <subject> [<account>]
+    Removes an Export
+
+        --operator=OPERATOR  Operator hosting the account
+    -f, --force              Removes without prompting
+
+auth account keys add [<flags>] [<account>] [<role>]
+    Adds a signing key
+
+    --operator=OPERATOR          Operator to act on
+    --description=DESCRIPTION    Description for the signing key
+    --subscriptions=-1           Maximum allowed subscriptions
+    --payload=BYTES              Maximum allowed payload
+    --[no-]bearer                Allows bearer tokens
+    --locale=LOCALE              Locale for the client
+    --connection=CONNECTION ...  Set the allowed connections (nats, ws, wsleaf,
+                                 mqtt)
+    --pub-allow=PUB-ALLOW ...    Sets subjects where publishing is allowed
+    --pub-deny=PUB-DENY ...      Sets subjects where publishing is allowed
+    --sub-allow=SUB-ALLOW ...    Sets subjects where subscribing is allowed
+    --sub-deny=SUB-DENY ...      Sets subjects where subscribing is allowed
+
+auth account keys info [<flags>] [<account>] [<key>]
+    Show information for a Scoped Signing Key
+
+        --operator=OPERATOR  Operator to act on
+    -j, --json               Produce JSON output
+
+auth account keys ls [<flags>] [<account>]
+    List Scoped Signing Keys
+
+    --operator=OPERATOR  Operator to act on
+
+auth account keys rm [<flags>] [<account>]
+    Remove a scoped signing key
+
+        --key=KEY            The key to remove
+        --operator=OPERATOR  Operator to act on
+    -f, --force              Removes without prompting
+
+auth account mappings add [<flags>] [<account>] [<source>] [<target>] [<weight>] [<cluster>]
+    Add a new mapping
+
+    --operator=OPERATOR  Operator to act on
+    --config=CONFIG      json or yaml file to read configuration from
+
+auth account mappings ls [<flags>] [<account>]
+    List mappings
+
+    --operator=OPERATOR  Operator to act on
+
+auth account mappings rm [<flags>] [<account>] [<source>]
+    Remove a mapping
+
+    --operator=OPERATOR  Operator to act on
+
+auth account mappings info [<flags>] [<account>] [<source>]
+    Show information about a mapping
+
+        --operator=OPERATOR  Operator to act on
+    -j, --json               Produce JSON output
+
+auth user add [<flags>] <name> [<account>]
+    Adds a new User
+
+        --key=KEY                  The public key to use when signing the user
+        --operator=OPERATOR        Operator to add the user to
+        --[no-]bearer              Enables the use of bearer tokens
+        --data=-1                  Maximum message data size to allow
+        --locale=LOCALE            Sets the locale for the user connection
+        --payload=1048576          Maximum payload size to allow
+        --pub-allow=PUB-ALLOW ...  Allow publishing to a subject
+        --pub-deny=PUB-DENY ...    Deny publishing to a subject
+        --sub-allow=SUB-ALLOW ...  Allow subscribing to a subject
+        --sub-deny=SUB-DENY ...    Deny subscribing to a subject
+        --subscriptions=-1         Maximum subscription count to allow
+        --tags=TAGS ...            Tags to assign to this User
+    -f, --force                    Overwrite existing files
+        --credential=CREDENTIAL    Writes credentials to a file
+        --defaults                 Accept default values without prompting
+
+auth user info [<flags>] [<name>] [<account>]
+    Show User information
+
+        --operator=OPERATOR  Operator holding the Account
+    -j, --json               Produce JSON output
+
+auth user edit [<flags>] [<name>] [<account>]
+    Edits User settings
+
+    --operator=OPERATOR        Operator holding the Account
+    --[no-]bearer              Enables the use of bearer tokens
+    --data=-1                  Maximum message data size to allow
+    --locale=LOCALE            Sets the locale for the user connection
+    --payload=1048576          Maximum payload size to allow
+    --pub-allow=PUB-ALLOW ...  Allow publishing to a subject
+    --pub-deny=PUB-DENY ...    Deny publishing to a subject
+    --sub-allow=SUB-ALLOW ...  Allow subscribing to a subject
+    --sub-deny=SUB-DENY ...    Deny subscribing to a subject
+    --subscriptions=-1         Maximum subscription count to allow
+    --tags=TAGS ...            Tags to assign to this User
+    --no-tags=NO-TAGS ...      Tags to remove from this User
+    --credential=CREDENTIAL    Writes credentials to a file
+
+auth user ls [<flags>] [<account>]
+    List users
+
+    --operator=OPERATOR  Operator holding the Account
+    --names              Show just the Account names
+
+auth user rm [<flags>] [<name>] [<account>]
+    Removes an user
+
+        --operator=OPERATOR  Operator holding the Account
+        --revoke             Also revokes the user before deleting it
+    -f, --force              Removes without prompting
+
+auth user credential [<flags>] <file> [<name>] [<account>]
+    Creates a credential file for a user
+
+        --expire=EXPIRE      Duration till expiry
+        --operator=OPERATOR  Operator holding the Account
+    -f, --force              Overwrite existing files
+
+auth nkey gen [<flags>] <type>
+    Generates NKeys
+
+    --public           Output the public key
+    --entropy=ENTROPY  Source of entropy eg. /dev/urandom
+    --output=OUTPUT    Write the key to a file
+
+auth nkey show <key>
+    Show the public key
+
+
+auth nkey sign <file> <key>
+    Signs data using NKeys
+
+
+auth nkey verify <file> <signature> <key>
+    Verify signed data
+
+
+auth nkey seal [<flags>] <file> <key> <recipient>
+    Encrypts a file using NKeys
+
+    --output=OUTPUT  Write the encrypted data to a file
+    --[no-]b64       Write base64 encoded data
+
+auth nkey unseal [<flags>] <file> <key> <sender>
+    Decrypts a file using NKeys
+
+    --output=OUTPUT  Write the decrypted data to a file
+    --[no-]b64       Read data in as base64 encoded
+
+bench pub [<flags>] <subject>
+    Publish Core NATS messages
+
+        --sleep=DURATION          Sleep for the specified interval between
+                                  publications
+        --clients=1               Number of concurrent clients
+        --msgs=100000             Number of messages to publish or subscribe to
+        --[no-]progress           Enable or disable the progress bar
+        --csv=CSV                 Save benchmark data to CSV file
+        --size="128B"             Size of the test messages
+        --multisubject            Multi-subject mode, each message is published
+                                  on a subject that includes the publisher's
+                                  message sequence number as a token
+        --multisubjectmax=100000  The maximum number of subjects to use in
+                                  multi-subject mode (0 means no max)
+        --multisubjectrandomize   Randomize which subjects are being used when
+                                  in multisubject mode
+        --payload=PAYLOAD         File containing a message payload to send
+    -H, --header=HEADER ...       Adds headers to the message using K:V format
+
+bench sub [<flags>] <subject>
+    Subscribe to Core NATS messages
+
+    --multisubject   Multi-subject mode, each message is published on a subject
+                     that includes the publisher's message sequence number as a
+                     token
+    --clients=1      Number of concurrent clients
+    --msgs=100000    Number of messages to publish or subscribe to
+    --[no-]progress  Enable or disable the progress bar
+    --csv=CSV        Save benchmark data to CSV file
+    --size="128B"    Size of the test messages
+
+bench service request [<flags>] <subject>
+    Send a request and wait for a reply
+
+        --payload=PAYLOAD    File containing the payload to send
+    -H, --header=HEADER ...  Adds headers to the message using K:V format
+
+bench service serve <subject>
+    Service requests
+
+
+bench js pub sync [<flags>] <subject>
+    Use synchronous JetStream publish
+
+        --multisubject            Multi-subject mode, each message is published
+                                  on a subject that includes the publisher's
+                                  message sequence number as a token
+        --multisubjectmax=100000  The maximum number of subjects to use in
+                                  multi-subject mode (0 means no max)
+        --multisubjectrandomize   Randomize which subjects are being used when
+                                  in multisubject mode
+        --payload=PAYLOAD         File containing a message payload to send
+    -H, --header=HEADER ...       Adds headers to the message using K:V format
+        --create                  Create or update the stream first
+        --storage=file            JetStream storage (memory/file) for the
+                                  "benchstream" stream
+        --replicas=1              Number of replicas for the "benchstream"
+                                  stream
+        --maxbytes="1GB"          The maximum size of the stream or KV bucket in
+                                  bytes
+        --dedup                   Sets a message id in the header to use JS
+                                  Publish de-duplication
+        --dedupwindow=2m          Sets the duration of the stream's
+                                  deduplication functionality
+        --purge                   Purge the stream before running
+        --persistasync            Set the persistence mode for the steam to
+                                  asynchronous (only for R1 streams)
+
+bench js pub async [<flags>] <subject>
+    Use asynchronous JetStream publish
+
+        --batch=500               Sets the number of asynchronous operations per
+                                  batch
+        --multisubject            Multi-subject mode, each message is published
+                                  on a subject that includes the publisher's
+                                  message sequence number as a token
+        --multisubjectmax=100000  The maximum number of subjects to use in
+                                  multi-subject mode (0 means no max)
+        --multisubjectrandomize   Randomize which subjects are being used when
+                                  in multisubject mode
+        --payload=PAYLOAD         File containing a message payload to send
+    -H, --header=HEADER ...       Adds headers to the message using K:V format
+        --create                  Create or update the stream first
+        --storage=file            JetStream storage (memory/file) for the
+                                  "benchstream" stream
+        --replicas=1              Number of replicas for the "benchstream"
+                                  stream
+        --maxbytes="1GB"          The maximum size of the stream or KV bucket in
+                                  bytes
+        --dedup                   Sets a message id in the header to use JS
+                                  Publish de-duplication
+        --dedupwindow=2m          Sets the duration of the stream's
+                                  deduplication functionality
+        --purge                   Purge the stream before running
+        --persistasync            Set the persistence mode for the steam to
+                                  asynchronous (only for R1 streams)
+
+bench js pub batch [<flags>] <subject>
+    Use batch JetStream publish
+
+        --batch=500               Sets the size of the batches
+        --multisubject            Multi-subject mode, each message is published
+                                  on a subject that includes the publisher's
+                                  message sequence number as a token
+        --multisubjectmax=100000  The maximum number of subjects to use in
+                                  multi-subject mode (0 means no max)
+        --multisubjectrandomize   Randomize which subjects are being used when
+                                  in multisubject mode
+        --payload=PAYLOAD         File containing a message payload to send
+    -H, --header=HEADER ...       Adds headers to the message using K:V format
+        --create                  Create or update the stream first
+        --storage=file            JetStream storage (memory/file) for the
+                                  "benchstream" stream
+        --replicas=1              Number of replicas for the "benchstream"
+                                  stream
+        --maxbytes="1GB"          The maximum size of the stream or KV bucket in
+                                  bytes
+        --dedup                   Sets a message id in the header to use JS
+                                  Publish de-duplication
+        --dedupwindow=2m          Sets the duration of the stream's
+                                  deduplication functionality
+        --purge                   Purge the stream before running
+        --persistasync            Set the persistence mode for the steam to
+                                  asynchronous (only for R1 streams)
+
+bench js ordered [<flags>]
+    Consume JetStream messages from a consumer using an ephemeral ordered
+    consumer
+
+    --batch=500            Sets the max number of messages that can be buffered
+                           in the client
+    --purge                Purge the stream before running
+    --filter=SUBJECTS ...  Filter Stream by subjects
+
+bench js consume [<flags>]
+    Consume JetStream messages from a durable consumer using a callback
+
+    --consumer="nats-bench"  Specify the durable consumer name to use
+    --batch=500              Sets the max number of messages that can be
+                             buffered in the client
+    --acks=explicit          Acknowledgement mode for the consumer
+    --[no-]doubleack         Synchronously acknowledge messages, waiting for a
+                             reply from the server
+    --filter=SUBJECTS ...    Filter Stream by subjects
+    --purge                  Purge the stream before running
+
+bench js fetch [<flags>]
+    Consume JetStream messages from a durable consumer using fetch
+
+    --consumer="nats-bench"  Specify the durable consumer name to use
+    --batch=500              Sets the max number of messages that can be
+                             buffered in the client
+    --acks=explicit          Acknowledgement mode for the consumer
+    --[no-]doubleack         Synchronously acknowledge messages, waiting for a
+                             reply from the server
+    --filter=SUBJECTS ...    Filter Stream by subjects
+    --purge                  Purge the stream before running
+
+bench js get sync
+    Use synchronous JetStream get
+
+
+bench js get batch [<flags>]
+    Use batched JetStream direct get
+
+    --batch=500   Sets the max number of messages that can be buffered in the
+                  client
+    --filter=">"  Filter for the messages
+
+bench kv put [<flags>]
+    Put messages in a KV bucket
+
+    --storage=file    JetStream storage (memory/file) for the "benchstream"
+                      bucket
+    --replicas=1      Number of replicas for the "benchstream" bucket
+    --maxbytes="1GB"  The maximum size of the stream or KV bucket in bytes
+    --history=1       History depth for the bucket in KV mode
+    --purge           Purge the stream before running
+    --randomize=0     Randomly put messages using keys between 0 and this number
+                      (set to 0 for sequential access)
+
+bench kv get [<flags>]
+    Get messages from a KV bucket
+
+    --randomize=0  Randomly get messages using keys between 0 and this number
+                   (set to 0 for sequential access)
+
+bench oldjs ordered [<flags>] <subject>
+    Consume JetStream messages from a consumer using an old JS API's ephemeral
+    ordered consumer
+
+    --multisubject  Multi-subject mode, each message is published on a subject
+                    that includes the publisher's message sequence number as a
+                    token
+
+bench oldjs push [<flags>] <subject>
+    Consume JetStream messages from a consumer using an old JS API's durable
+    push consumer
+
+    --consumer="nats-bench"  Specify the durable consumer name to use
+    --maxacks=500            Sets the max ack pending value, adjusts for the
+                             number of clients
+    --[no-]ack               Uses explicit message acknowledgement or not for
+                             the consumer
+    --[no-]doubleack         Synchronously acknowledge messages, waiting for a
+                             reply from the server
+
+bench oldjs pull [<flags>] <subject>
+    Consume JetStream messages from a consumer using an old JS API's durable
+    pull consumer
+
+    --consumer="nats-bench"  Specify the durable consumer name to use
+    --batch=500              Sets the fetch size for the consumer
+    --[no-]ack               Uses explicit message acknowledgement or not for
+                             the consumer
+    --[no-]doubleack         Synchronously acknowledge messages, waiting for a
+                             reply from the server
+
+consumer add [<flags>] [<stream>] [<consumer>]
+    Creates a new consumer
+
+    --config=CONFIG               JSON file to read configuration from
+    --validate                    Only validates the configuration against the
+                                  official Schema
+    --output=FILE                 Save configuration instead of creating
+    --ack=ACK                     Acknowledgment policy (none, all, explicit,
+                                  flow_control)
+    --bps=0                       Restrict message delivery to a certain bit per
+                                  second
+    --backoff=MODE                Creates a consumer backoff policy using a
+                                  specific pre-written algorithm (none, linear)
+    --backoff-steps=10            Number of steps to use when creating the
+                                  backoff policy
+    --backoff-min=1m              The shortest backoff period that will be
+                                  generated
+    --backoff-max=20m             The longest backoff period that will be
+                                  generated
+    --deliver=POLICY              Start policy (all, new, last, subject, 1h,
+                                  msg sequence)
+    --deliver-group=GROUP         Delivers push messages only to subscriptions
+                                  matching this group
+    --description=DESCRIPTION     Sets a contextual description for the consumer
+    --ephemeral                   Create an ephemeral consumer
+    --filter=SUBJECTS ...         Filter Stream by subjects
+    --flow-control                Enable Push consumer flow control
+    --heartbeat=HEARTBEAT         Enable idle Push consumer heartbeats (-1
+                                  disable)
+    --[no-]headers-only           Deliver only headers and no bodies
+    --max-deliver=TRIES           Maximum amount of times a message will be
+                                  delivered
+    --max-pending=-1              Maximum pending Acks before consumers are
+                                  paused
+    --max-waiting=PULLS           Maximum number of outstanding pulls allowed
+    --max-pull-batch=BATCH_SIZE   Maximum size batch size for a pull request to
+                                  accept
+    --max-pull-expire=EXPIRES     Maximum expire duration for a pull request to
+                                  accept
+    --max-pull-bytes=BYTES        Maximum max bytes for a pull request to accept
+    --pull                        Deliver messages in 'pull' mode
+    --replay=POLICY               Replay Policy (instant, original)
+    --sample=-1                   Percentage of requests to sample for
+                                  monitoring purposes
+    --target=SUBJECT              Push based delivery target subject
+    --wait=-1s                    Acknowledgment waiting time
+    --inactive-threshold=THRESHOLD  
+                                  How long to allow an ephemeral consumer to be
+                                  idle before removing it
+    --memory                      Force the consumer state to be stored in
+                                  memory rather than inherit from the stream
+    --replicas=REPLICAS           Sets a custom replica count rather than
+                                  inherit from the stream
+    --metadata=META ...           Adds metadata to the consumer
+    --pause=PAUSE                 Pause the consumer for a duration after start
+                                  or until a specific timestamp (eg 2026-09-04
+                                  15:24:01)
+    --pinned-groups=GROUPS ...    Create a Pinned Client consumer based on these
+                                  groups
+    --pinned-ttl=TTL              The time to allow for a client to pull before
+                                  losing the pinned status
+    --overflow-groups=GROUPS ...  Create a Overflow consumer based on these
+                                  groups
+    --prioritized-groups=GROUPS ...  
+                                  Create a Prioritized consumer based on these
+                                  groups
+    --defaults                    Accept default values for all prompts
+
+consumer edit [<flags>] [<stream>] [<consumer>]
+    Edits the configuration of a consumer
+
+        --config=CONFIG            JSON file to read configuration from
+    -f, --force                    Force removal without prompting
+    -i, --[no-]interactive         Edit the configuring using your editor
+        --dry-run                  Only shows differences, do not edit the
+                                   stream
+        --backoff=MODE             Creates a consumer backoff policy using a
+                                   specific pre-written algorithm (none, linear)
+        --backoff-steps=10         Number of steps to use when creating the
+                                   backoff policy
+        --backoff-min=1m           The shortest backoff period that will be
+                                   generated
+        --backoff-max=20m          The longest backoff period that will be
+                                   generated
+        --description=DESCRIPTION  Sets a contextual description for the
+                                   consumer
+        --filter=SUBJECTS ...      Filter Stream by subjects
+        --[no-]headers-only        Deliver only headers and no bodies
+        --max-deliver=TRIES        Maximum amount of times a message will be
+                                   delivered
+        --max-pending=-1           Maximum pending Acks before consumers are
+                                   paused
+        --max-pull-batch=BATCH_SIZE  
+                                   Maximum size batch size for a pull request to
+                                   accept
+        --max-pull-expire=EXPIRES  Maximum expire duration for a pull request to
+                                   accept
+        --max-pull-bytes=BYTES     Maximum max bytes for a pull request to
+                                   accept
+        --sample=-1                Percentage of requests to sample for
+                                   monitoring purposes
+        --target=SUBJECT           Push based delivery target subject
+        --wait=-1s                 Acknowledgment waiting time
+        --inactive-threshold=THRESHOLD  
+                                   How long to allow an ephemeral consumer to be
+                                   idle before removing it
+        --replicas=REPLICAS        Sets a custom replica count rather than
+                                   inherit from the stream
+        --metadata=META ...        Adds metadata to the consumer
+
+consumer ls [<flags>] [<stream>]
+    List known consumers
+
+    -j, --json       Produce JSON output
+    -n, --names      Show just the consumer names
+        --no-select  Do not select consumers from a list
+
+consumer find [<flags>] [<stream>]
+    Finds consumers matching certain criteria
+
+    --pull                     Display only pull based consumers
+    --push                     Display only push based consumers
+    --bound                    Display push-bound or pull consumers with waiting
+                               pulls
+    --waiting=WAITING          Display consumers with fewer waiting pulls
+    --ack-pending=ACK-PENDING  Display consumers with fewer pending acks
+    --pending=PENDING          Display consumers with fewer unprocessed messages
+    --idle=IDLE                Display consumers with no new deliveries for a
+                               period
+    --created=DURATION         Display consumers created longer ago than
+                               duration
+    --replicas=REPLICAS        Display consumers with fewer or equal replicas
+                               than the value
+    --leader=SERVER            Display only clustered streams with a specific
+                               leader
+    --pinned                   Finds Pinned Client priority group consumers that
+                               are fully pinned
+    --[no-]invert              Invert the check - before becomes after, with
+                               becomes without
+    --expression=EXPRESSION    Match consumers using an expression language
+    --api-level=API-LEVEL      Match consumers that support at least the given
+                               api level
+
+consumer info [<flags>] [<stream>] [<consumer>]
+    Consumer information
+
+    -j, --json       Produce JSON output
+        --no-select  Do not select consumers from a list
+
+consumer state [<flags>] [<stream>] [<consumer>]
+    Consumer state
+
+    -j, --json       Produce JSON output
+        --no-select  Do not select streams from a list
+
+consumer rm [<flags>] [<stream>] [<consumer>]
+    Removes a consumer
+
+    -f, --force  Force removal without prompting
+
+consumer reset [<flags>] [<stream>] [<consumer>]
+    Resets the consumer to a previous state
+
+        --sequence=SEQUENCE  Sequence to reset to
+    -f, --force              Force reset without prompting
+
+consumer copy [<flags>] <stream> <source> <destination>
+    Creates a new consumer based on the configuration of another
+
+    --ack=ACK                     Acknowledgment policy (none, all, explicit,
+                                  flow_control)
+    --bps=0                       Restrict message delivery to a certain bit per
+                                  second
+    --backoff=MODE                Creates a consumer backoff policy using a
+                                  specific pre-written algorithm (none, linear)
+    --backoff-steps=10            Number of steps to use when creating the
+                                  backoff policy
+    --backoff-min=1m              The shortest backoff period that will be
+                                  generated
+    --backoff-max=20m             The longest backoff period that will be
+                                  generated
+    --deliver=POLICY              Start policy (all, new, last, subject, 1h,
+                                  msg sequence)
+    --deliver-group=GROUP         Delivers push messages only to subscriptions
+                                  matching this group
+    --description=DESCRIPTION     Sets a contextual description for the consumer
+    --ephemeral                   Create an ephemeral consumer
+    --filter=SUBJECTS ...         Filter Stream by subjects
+    --flow-control                Enable Push consumer flow control
+    --heartbeat=HEARTBEAT         Enable idle Push consumer heartbeats (-1
+                                  disable)
+    --[no-]headers-only           Deliver only headers and no bodies
+    --max-deliver=TRIES           Maximum amount of times a message will be
+                                  delivered
+    --max-pending=-1              Maximum pending Acks before consumers are
+                                  paused
+    --max-waiting=PULLS           Maximum number of outstanding pulls allowed
+    --max-pull-batch=BATCH_SIZE   Maximum size batch size for a pull request to
+                                  accept
+    --max-pull-expire=EXPIRES     Maximum expire duration for a pull request to
+                                  accept
+    --max-pull-bytes=BYTES        Maximum max bytes for a pull request to accept
+    --pull                        Deliver messages in 'pull' mode
+    --replay=POLICY               Replay Policy (instant, original)
+    --sample=-1                   Percentage of requests to sample for
+                                  monitoring purposes
+    --target=SUBJECT              Push based delivery target subject
+    --wait=-1s                    Acknowledgment waiting time
+    --inactive-threshold=THRESHOLD  
+                                  How long to allow an ephemeral consumer to be
+                                  idle before removing it
+    --memory                      Force the consumer state to be stored in
+                                  memory rather than inherit from the stream
+    --replicas=REPLICAS           Sets a custom replica count rather than
+                                  inherit from the stream
+    --metadata=META ...           Adds metadata to the consumer
+    --pause=PAUSE                 Pause the consumer for a duration after start
+                                  or until a specific timestamp (eg 2026-09-04
+                                  15:24:01)
+    --pinned-groups=GROUPS ...    Create a Pinned Client consumer based on these
+                                  groups
+    --pinned-ttl=TTL              The time to allow for a client to pull before
+                                  losing the pinned status
+    --overflow-groups=GROUPS ...  Create a Overflow consumer based on these
+                                  groups
+    --prioritized-groups=GROUPS ...  
+                                  Create a Prioritized consumer based on these
+                                  groups
+
+consumer next [<flags>] <stream> <consumer>
+    Retrieves messages from Pull consumers without interactive prompts
+
+        --[no-]ack   Acknowledge received message
+        --nak        Perform a Negative Acknowledgement on the message
+        --term       Terms the message
+    -r, --raw        Show only the message
+        --wait=WAIT  Wait up to this period to acknowledge messages
+        --count=1    Number of messages to try to fetch from the pull consumer
+
+consumer graph [<stream>] [<consumer>]
+    View a graph of consumer activity
+
+
+consumer pause [<flags>] [<stream>] [<consumer>] [TIME]
+    Pause a consumer until a later time
+
+    -f, --force  Force pause without prompting
+
+consumer unpin [<flags>] [<stream>] [<consumer>] [<group>]
+    Unpin the current Pinned Client from a Priority Group
+
+    -f, --force  Force unpin without prompting
+
+consumer resume [<flags>] [<stream>] [<consumer>]
+    Resume a paused consumer
+
+    -f, --force  Force resume without prompting
+
+consumer report [<flags>] [<stream>]
+    Reports on consumer statistics
+
+    -r, --raw      Show un-formatted numbers
+    -l, --leaders  Show details about the leaders
+
+consumer cluster step-down [<flags>] [<stream>] [<consumer>]
+    Force a new leader election by standing down the current leader
+
+        --preferred=PREFERRED  Prefer placing the leader on a specific host
+    -f, --force                Force leader step down ignoring current leader
+
+consumer cluster balance [<flags>] [<stream>]
+    Balance consumer leaders
+
+    --pull                     Balance only pull based consumers
+    --push                     Balance only push based consumers
+    --bound                    Balance push-bound or pull consumers with waiting
+                               pulls
+    --waiting=WAITING          Balance consumers with fewer waiting pulls
+    --ack-pending=ACK-PENDING  Balance consumers with fewer pending acks
+    --pending=PENDING          Balance consumers with fewer unprocessed messages
+    --idle=IDLE                Balance consumers with no new deliveries for a
+                               period
+    --created=DURATION         Balance consumers created longer ago than
+                               duration
+    --replicas=REPLICAS        Balance consumers with fewer or equal replicas
+                               than the value
+    --leader=SERVER            Balance only clustered streams with a specific
+                               leader
+    --pinned                   Balance Pinned Client priority group consumers
+                               that are fully pinned
+    --[no-]invert              Invert the check - before becomes after, with
+                               becomes without
+    --expression=EXPRESSION    Balance matching consumers using an expression
+                               language
+
+context add [<flags>] <name>
+    Update or create a context
+
+    --description=DESCRIPTION  Set a friendly description for this context
+    --select                   Select the saved context as the default one
+    --nsc=NSC                  URL to a nsc user, eg.
+                               nsc://<operator>/<account>/<user>
+
+context copy [<flags>] <source> <name>
+    Copies an existing context
+
+    --description=DESCRIPTION  Set a friendly description for this context
+    --select                   Select the saved context as the default one
+    --nsc=NSC                  URL to a nsc user, eg.
+                               nsc://<operator>/<account>/<user>
+
+context edit <name>
+    Edit a context in your EDITOR
+
+
+context ls [<flags>]
+    List known contexts
+
+    -j, --json   Show the list in JSON format
+        --names  List just the names of known contexts
+
+context rm [<flags>] <name>
+    Remove a context
+
+    -f, --force  Force remove without prompting
+
+context select [<name>]
+    Select the default context
+
+
+context unselect
+    Ensures that no context is the default context
+
+
+context info [<flags>] [<name>]
+    Display information on the current or named context
+
+    -j, --json     Show the context in JSON format
+        --connect  Attempts to connect to NATS using the context while
+                   validating
+
+context validate [<flags>] [<name>]
+    Validate one or all contexts
+
+    --connect  Attempts to connect to NATS using the context while validating
+
+context previous
+    Switch to the previous context
+
+
+counter get [<flags>] <subject>
+    Gets the current value for a counter
+
+    --stream=STREAM  The stream name to fetch the value from
+
+counter view [<flags>] <subject>
+    View the full counter metadata
+
+    --stream=STREAM  The stream name to fetch the value from
+
+counter increment [<flags>] <subject> [<value>]
+    Increment the value of a counter
+
+    --stream=STREAM  The stream name to fetch the value from
+
+counter list [<flags>] [<subject>]
+    List Counters in a stream
+
+    --stream=STREAM  The stream name to fetch the value from
+    --json           Produce JSON output
+
+errors ls [<flags>] [<match>] [<sort>]
+    List all known error codes
+
+    -R, --[no-]reverse  Reverse sort
+
+errors lookup <code>
+    Looks up an error by it's code
+
+
+errors edit <file> [<code>]
+    Edit or add a error code using your EDITOR
+
+
+errors validate [<file>]
+    Validates the validity of the errors definition
+
+
+events [<flags>]
+    Show Advisories and Events
+
+    -a, --all                    Show all events
+    -j, --json                   Produce JSON output
+        --cloudevent             Produce CloudEvents v1 output
+        --short                  Short event format
+        --filter="."             Filter across the entire event using regular
+                                 expressions
+        --js-metric              Shows JetStream metric events (false)
+        --js-advisory            Shows advisory events (false)
+        --[no-]srv-advisory      Shows NATS Server advisories (true)
+        --subjects=SUBJECTS ...  Show Advisories and Metrics received on
+                                 specific subjects
+        --stream=STREAM          Reads events from a Stream only
+        --since=DURATION         When reading a Stream reads from a certain
+                                 duration ago
+
+kv add [<flags>] <bucket>
+    Adds a new KV Store Bucket
+
+    --description=DESCRIPTION      A description for the bucket
+    --history=1                    How many historic values to keep per key
+    --storage=STORAGE              Storage backend to use (file, memory)
+    --ttl=DURATION                 How long to keep values for
+    --marker-ttl=DURATION          Enables Per-Key TTLs and Limit Markers
+    --replicas=1                   How many replicas of the data to store
+    --max-value-size=BYTES         Maximum size for any single value
+    --max-bucket-size=BYTES        Maximum size for the bucket
+    --tags=TAGS ...                Place the bucket on servers that has specific
+                                   tags
+    --cluster=CLUSTER              Place the bucket on a specific cluster
+    --[no-]compress                Compress the bucket data
+    --metadata=META ...            Adds metadata to the stream
+    --republish-source=SRC         Republish messages to --republish-destination
+    --republish-destination=DEST   Republish destination for messages in
+                                   --republish-source
+    --republish-headers            Republish only message headers, no bodies
+    --mirror=MIRROR                Creates a mirror of a different bucket
+    --mirror-domain=MIRROR-DOMAIN  When mirroring find the bucket in a different
+                                   domain
+    --source=BUCKET ...            Source from a different bucket
+
+kv edit [<flags>] <bucket>
+    Edits an existing KV Store Bucket
+
+    --description=DESCRIPTION     A description for the bucket
+    --history=1                   How many historic values to keep per key
+    --ttl=DURATION                How long to keep values for
+    --marker-ttl=DURATION         Enables Per-Key TTLs and Limit Markers
+    --replicas=1                  How many replicas of the data to store
+    --max-value-size=BYTES        Maximum size for any single value
+    --max-bucket-size=BYTES       Maximum size for the bucket
+    --tags=TAGS ...               Place the bucket on servers that has specific
+                                  tags
+    --cluster=CLUSTER             Place the bucket on a specific cluster
+    --[no-]compress               Compress the bucket data
+    --metadata=META ...           Adds metadata to the stream
+    --republish-source=SRC        Republish messages to --republish-destination
+    --republish-destination=DEST  Republish destination for messages in
+                                  --republish-source
+    --republish-headers           Republish only message headers, no bodies
+    --[no-]no-mirror              Removes mirror configuration from a bucket
+    --source=BUCKET ...           Source from a different bucket
+
+kv put <bucket> <key> [<value>]
+    Puts a value into a key
+
+
+kv get [<flags>] <bucket> <key>
+    Gets a value for a key
+
+    --revision=REVISION  Gets a specific revision
+    --raw                Show only the value string
+
+kv create [<flags>] <bucket> <key> [<value>]
+    Puts a value into a key only if the key is new or it's last operation was a
+    delete
+
+    --ttl=DURATION  Sets a TTL for the key
+
+kv update <bucket> <key> <value> <revision>
+    Updates a key with a new value if the previous value matches the given
+    revision
+
+
+kv del [<flags>] <bucket> [<key>]
+    Deletes a key or the entire bucket
+
+    -f, --force  Act without confirmation
+
+kv purge [<flags>] <bucket> <key>
+    Deletes a key from the bucket, clearing history before creating a delete
+    marker
+
+    -f, --force         Act without confirmation
+        --ttl=DURATION  Sets a TTL for the purge marker
+
+kv history <bucket> <key>
+    Shows the full history for a key
+
+
+kv revert [<flags>] <bucket> <key> <revision>
+    Reverts a value to a previous revision using put
+
+    --[no-]force  Force reverting without prompting
+
+kv info [<bucket>]
+    View the status of a KV store
+
+
+kv watch [<flags>] <bucket> [<key>]
+    Watch the bucket or a specific key for updated
+
+    --history            Includes historic values
+    --[no-]deletes       Includes deletes in watched values
+    --updates            Only show new values written
+    --revision=REVISION  Starts from a certain revision
+
+kv ls [<flags>] [<bucket>] [<key>]
+    List available buckets or the keys in a bucket
+
+    -n, --names          Show just the bucket names
+    -v, --verbose        Show detailed info about the key
+        --display-value  Display value in verbose output (has no effect without
+                         'verbose')
+
+kv compact [<flags>] <bucket>
+    Reclaim space used by deleted keys
+
+    -f, --force  Act without confirmation
+
+latency [<flags>]
+    Perform latency tests between two NATS servers
+
+    --server-b=SERVER-B    The second server to subscribe on
+    --size=8               Message size
+    --rate=1000            Rate of messages per second
+    --duration=5s          Test duration
+    --histogram=HISTOGRAM  Output file to store the histogram in
+
+object add [<flags>] <bucket>
+    Adds a new Object Store Bucket
+
+    --ttl=TTL                  How long to keep objects for
+    --replicas=1               How many replicas of the data to store
+    --max-bucket-size=MAX-BUCKET-SIZE  
+                               Maximum size for the bucket
+    --description=DESCRIPTION  A description for the bucket
+    --storage=STORAGE          Storage backend to use (file, memory)
+    --tags=TAGS ...            Place the store on servers that has specific tags
+    --cluster=CLUSTER          Place the store on a specific cluster
+    --metadata=META ...        Adds metadata to the bucket
+    --[no-]compress            Compress the bucket data
+
+object edit [<flags>] <bucket>
+    Edit an existing Object Store Bucket
+
+    --ttl=TTL                  How long to keep objects for
+    --replicas=1               How many replicas of the data to store
+    --max-bucket-size=MAX-BUCKET-SIZE  
+                               Maximum size for the bucket
+    --description=DESCRIPTION  A description for the bucket
+    --tags=TAGS ...            Place the store on servers that has specific tags
+    --cluster=CLUSTER          Place the store on a specific cluster
+    --metadata=META ...        Adds metadata to the bucket
+    --[no-]compress            Compress the bucket data
+
+object put [<flags>] <bucket> [<file>]
+    Puts a file into the store
+
+        --name=NAME                Override the name supplied to the object
+                                   store
+        --description=DESCRIPTION  Sets an optional description for the object
+    -H, --header=HEADER ...        Adds headers to the object using K:V format
+        --chunk-size=CHUNK-SIZE    Sets the chunk size for the file
+        --[no-]progress            Disable progress bars
+    -f, --force                    Act without confirmation
+
+object del [<flags>] <bucket> [<file>]
+    Deletes a file or bucket from the store
+
+    -f, --force  Act without confirmation
+
+object get [<flags>] <bucket> <file>
+    Retrieves a file from the store
+
+    -O, --output=OUTPUT  Override the output file name
+        --[no-]progress  Disable progress bars
+    -f, --force          Act without confirmation
+
+object info [<bucket>] [<file>]
+    Get information about a bucket or object
+
+
+object ls [<flags>] [<bucket>]
+    List buckets or contents of a specific bucket
+
+    -n, --names  When listing buckets, show just the bucket names
+
+object seal [<flags>] <bucket>
+    Seals a bucket preventing further updates
+
+    -f, --force  Force sealing without prompting
+
+object watch <bucket>
+    Watch a bucket for changes
+
+
+plugins register [<flags>] <name> <command>
+    Registers a new plugin
+
+    --force  Overwrite existing plugins
+
+publish [<flags>] <subject> [<body>]
+    Generic data publish utility
+
+        --reply=SUBJECT            Sets a custom reply to subject
+    -H, --header=K:V ...           Adds headers to the message using K:V format
+        --atomic                   Atomic batch publish to JetStream (implies
+                                   --jetstream)
+        --count=1                  Publish multiple messages
+        --force-stdin              Force reading from stdin
+    -J, --jetstream                Publish messages to JetStream
+    -q, --quiet                    Show just the output received
+        --schedule-after=DURATION  Schedule the message after a certain duration
+                                   (implies --jetstream)
+        --schedule-at=TIME         Schedule the message at a certain RFC3339
+                                   time (implies --jetstream)
+        --schedule-cron=CRON       Cron definition for a scheduled message
+                                   (implies --jetstream)
+        --schedule-dest=SUBJECT    Subject the message will publish to when the
+                                   schedule fires (implies --jetstream)
+        --schedule-every=DURATION  Schedules the message every interval (implies
+                                   --jetstream)
+        --schedule-source=SUBJECT  Reads a specific subject when scheduling
+                                   (implies --jetstream)
+        --schedule-ttl=DURATION    How long generated messages should live in
+                                   the stream
+        --send-on=eof              When to send data from stdin: 'eof' (default)
+                                   or 'newline'
+        --sleep=SLEEP              When publishing multiple messages, sleep
+                                   between publishes
+        --[no-]templates           Enables template functions in the body and
+                                   subject (does not affect headers)
+
+reply [<flags>] <subject> [<body>]
+    Generic service reply utility
+
+        --echo                  Echo back what is received
+        --command=COMMAND       Runs a command and responds with the output if
+                                exit code was 0
+    -q, --queue="NATS-RPLY-22"  Queue group name
+        --sleep=MAX             Inject a random sleep delay between replies up
+                                to this duration max
+    -H, --header=HEADER ...     Adds headers to the message using K:V format
+        --count=COUNT           Quit after receiving this many messages
+
+request [<flags>] <subject> [<body>]
+    Generic request-reply request utility
+
+    -r, --raw                  Show just the output received
+    -H, --header=HEADER ...    Adds headers to the message using K:V format
+        --count=1              Publish multiple messages
+        --replies=1            Wait for multiple replies from services. 0 waits
+                               until timeout
+        --reply-timeout=300ms  Maximum time between replies when waiting for
+                               more than one
+        --wait-for-empty       Wait for multiple replies until a empty message
+                               is received
+        --translate=TRANSLATE  Translate the message data by running it through
+                               the given command before output
+        --force-stdin          Force reading from stdin
+        --send-on=eof          When to send data from stdin: 'eof' (default) or
+                               'newline'
+        --[no-]templates       Enables template functions in the body and
+                               subject (does not affect headers)
+
+rtt [<flags>] [<iterations>]
+    Compute round-trip time to NATS server
+
+    -j, --json  Produce JSON output
+
+schema search [<flags>] [<pattern>]
+    Search schemas using a pattern
+
+    --json  Produce JSON format output
+
+schema info [<flags>] <schema>
+    Display schema contents
+
+    --yaml  Produce YAML format output
+
+schema validate [<flags>] <schema> <file>
+    Validates a JSON file against a schema
+
+    --json  Produce JSON format output
+
+schema request [<flags>] <subject> [<body>]
+    Request and validate data from a NATS service
+
+    --schema=SCHEMA  The schema identifier to validate against
+    --show           Show the received data
+
+server account info [<flags>] <account>
+    Shows information for an account
+
+    --host=HOST  Request information from a specific server
+
+server account purge [<flags>] NAME
+    Purge assets from JetStream clusters
+
+    -f, --force  Perform the operation without prompting
+
+server check connection [<flags>]
+    Checks basic server connection
+
+    --connect-warn=500ms   Warning threshold to allow for establishing
+                           connections
+    --connect-critical=1s  Critical threshold to allow for establishing
+                           connections
+    --rtt-warn=500ms       Warning threshold to allow for server RTT
+    --rtt-critical=1s      Critical threshold to allow for server RTT
+    --req-warn=500ms       Warning threshold to allow for full round trip test
+    --req-critical=1s      Critical threshold to allow for full round trip test
+
+server check stream [<flags>]
+    Checks the health of mirrored streams, streams with sources or clustered
+    streams
+
+    --stream=STREAM                The streams to check
+    --lag-critical=MSGS            Critical threshold to allow for lag on any
+                                   source or mirror
+    --seen-critical=DURATION       Critical threshold for how long ago the
+                                   source or mirror should have been seen
+    --min-sources=SOURCES          Minimum number of sources to expect
+    --max-sources=SOURCES          Maximum number of sources to expect
+    --peer-expect=SERVERS          Number of cluster replicas to expect
+    --peer-lag-critical=OPS        Critical threshold to allow for cluster peer
+                                   lag
+    --peer-seen-critical=DURATION  Critical threshold for how long ago a cluster
+                                   peer should have been seen
+    --msgs-warn=MSGS               Warn if there are fewer than this many
+                                   messages in the stream
+    --msgs-critical=MSGS           Critical if there are fewer than this many
+                                   messages in the stream
+    --subjects-warn=SUBJECTS       Critical threshold for subjects in the stream
+    --subjects-critical=SUBJECTS   Warning threshold for subjects in the stream
+
+server check consumer [<flags>]
+    Checks the health of a consumer
+
+    --stream=STREAM                The streams to check
+    --consumer=CONSUMER            The consumer to check
+    --outstanding-ack-critical=-1  Maximum number of outstanding acks to allow
+    --waiting-critical=-1          Maximum number of waiting pulls to allow
+    --unprocessed-critical=-1      Maximum number of unprocessed messages to
+                                   allow
+    --last-delivery-critical=0s    Time to allow since the last delivery
+    --last-ack-critical=0s         Time to allow since the last ack
+    --redelivery-critical=-1       Maximum number of redeliveries to allow
+    --pinned                       Requires Pinned Client priority with all
+                                   groups having a pinned client
+
+server check message [<flags>]
+    Checks properties of a message stored in a stream
+
+    --stream=STREAM          The streams to check
+    --subject=">"            The subject to fetch a message from
+    --age-warn=DURATION      Warning threshold for message age as a duration
+    --age-critical=DURATION  Critical threshold for message age as a duration
+    --content=.              Regular expression to check the content against
+    --body-timestamp         Use message body as a unix timestamp instead of
+                             message metadata
+
+server check meta [<flags>]
+    Check JetStream cluster state
+
+    --expect=SERVERS          Number of servers to expect
+    --lag-critical=OPS        Critical threshold to allow for lag
+    --seen-critical=DURATION  Critical threshold for how long ago a peer should
+                              have been seen
+
+server check request [<flags>]
+    Checks a request-reply service
+
+    --subject=SUBJECT              The subject to send the request to
+    --payload=PAYLOAD              Payload to send in the request
+    --headers=HEADERS ...          Headers to publish in the request
+    --match-payload=MATCH-PAYLOAD  Regular expression the response should match
+    --match-headers=MATCH-HEADERS ...  
+                                   Headers to publish in the request
+    --response-critical=RESPONSE-CRITICAL  
+                                   Critical threshold for response time
+    --response-warn=RESPONSE-WARN  Warning threshold for response time
+
+server check jetstream [<flags>]
+    Check JetStream account state
+
+    --mem-warn=75               Warning threshold for memory storage, in percent
+                                of limit
+    --mem-critical=90           Critical threshold for memory storage,
+                                in percent of limit
+    --store-warn=75             Warning threshold for disk storage, in percent
+                                of limit
+    --store-critical=90         Critical threshold for disk storage, in percent
+                                of limit
+    --streams-warn=-1           Warning threshold for number of streams used,
+                                in percent of limit
+    --streams-critical=-1       Critical threshold for number of streams used,
+                                in percent of limit
+    --consumers-warn=-1         Warning threshold for number of consumers used,
+                                in percent of limit
+    --consumers-critical=-1     Critical threshold for number of consumers used,
+                                in percent of limit
+    --[no-]replicas             Checks if all streams have healthy replicas
+    --replica-seen-critical=5s  Critical threshold for when a stream replica
+                                should have been seen, as a duration
+    --replica-lag-critical=200  Critical threshold for how many operations
+                                behind a peer can be
+
+server check server [<flags>]
+    Checks a NATS Server health
+
+    --name=NAME                    Server name to require in the result
+    --cpu-warn=CPU-WARN            Warning threshold for CPU usage, in percent
+    --cpu-critical=CPU-CRITICAL    Critical threshold for CPU usage, in percent
+    --mem-warn=MEM-WARN            Warning threshold for Memory usage, in bytes
+    --mem-critical=MEM-CRITICAL    Critical threshold Memory CPU usage, in bytes
+    --conn-warn=CONN-WARN          Warning threshold for connections, supports
+                                   inversion
+    --conn-critical=CONN-CRITICAL  Critical threshold for connections, supports
+                                   inversion
+    --subs-warn=SUBS-WARN          Warning threshold for number of active
+                                   subscriptions, supports inversion
+    --subs-critical=SUBS-CRITICAL  Critical threshold for number of active
+                                   subscriptions, supports inversion
+    --uptime-warn=UPTIME-WARN      Warning threshold for server uptime as
+                                   duration
+    --uptime-critical=UPTIME-CRITICAL  
+                                   Critical threshold for server uptime as
+                                   duration
+    --auth-required                Checks that authentication is enabled
+    --tls-required                 Checks that TLS is required
+    --js-required                  Checks that JetStream is enabled
+    --tls-cert-warn=TLS-CERT-WARN  Warning threshold for TLS certificate expiry
+                                   like 1d3h5m
+    --tls-cert-crit=TLS-CERT-CRIT  Critical threshold for TLS certificate expiry
+                                   like 1d3h5m
+
+server check kv [<flags>]
+    Checks a NATS KV Bucket
+
+    --bucket=BUCKET       Checks a specific bucket
+    --values-critical=-1  Critical threshold for number of values in the bucket
+    --values-warn=-1      Warning threshold for number of values in the bucket
+    --key=KEY             Requires a key to have any non-delete value set
+
+server check credential [<flags>]
+    Checks the validity of a NATS credential file
+
+    --credential=CREDENTIAL        The file holding the NATS credential
+    --validity-warn=VALIDITY-WARN  Warning threshold for time before expiry
+    --validity-critical=VALIDITY-CRITICAL  
+                                   Critical threshold for time before expiry
+    --[no-]require-expiry          Requires the credential to have expiry set
+
+server cluster balance [<flags>] [<duration>]
+    Balance cluster connections
+
+        --server-name=NAME  Restrict balancing to a specific server
+        --cluster=NAME      Restrict balancing to servers in a specific cluster
+        --idle=DURATION     Balance connections that has been idle for a period
+        --account=ACCOUNT   Balance connections in a certain account only
+        --subject=SUBJECT   Balance connections interested in certain subjects
+        --kind=Client ...   Balance only certain kinds of connection (*Client,
+                            Leafnode)
+    -f, --force             Force rebalance without prompting
+
+server cluster step-down [<flags>]
+    Force a new leader election by standing down the current meta leader
+
+        --cluster=CLUSTER  Request placement of the leader in a specific cluster
+        --tags=TAGS ...    Request placement of the leader on nodes with
+                           specific tag(s)
+        --host=HOST        Request placement of the leader on a specific node
+    -j, --json             Produce JSON output
+    -f, --force            Force leader step down ignoring current leader
+
+server cluster peer-remove [<flags>] <name>
+    Removes a server from a JetStream cluster
+
+    -f, --force  Force removal without prompting
+    -j, --json   Produce JSON output
+
+server config reload [<flags>] <id>
+    Reloads the runtime configuration
+
+    -f, --[no-]force  Force reload without prompting
+
+server generate [<flags>] <target>
+    Generate server configurations
+
+    --source=SOURCE  Fetch the configuration bundle from a file or URL
+
+server graph [<flags>] <server>
+    Show graphs for a single server
+
+    -j, --jetstream  Draw JetStream statistics
+
+server info [<server>]
+    Show information about a single server
+
+
+server list [<flags>] [<expect>]
+    List known servers
+
+    -j, --json          Produce JSON output
+        --sort=rtt      Sort servers by a specific key
+                        (name,cluster,conns,subs,routes,gws,mem,cpu,slow,uptime,rtt
+    -R, --reverse       Reverse sort servers
+        --[no-]compact  Compact server names
+
+server mappings [<source>] [<dest>] [<subject>]
+    Test subject mapping patterns
+
+
+server passwd [<flags>]
+    Creates encrypted passwords for use in NATS Server
+
+    -p, --pass=PASS  The password to encrypt (PASSWORD) ($PASSWORD)
+    -c, --cost=11    The cost to use in the bcrypt argument
+    -g, --generate   Generates a secure passphrase and encrypt it
+
+server ping [<flags>] [<expect>]
+    Ping all servers
+
+    --graph  Produce a response distribution graph
+    --id     Include the Server ID in the output
+
+server report accounts [<flags>] [<account>] [<limit>]
+    Report on account activity
+
+        --sort=subs        Sort by a specific property
+                           (in-bytes,out-bytes,in-msgs,out-msgs,conns,subs)
+        --top=1000         Limit results to the top results
+        --host=HOST        Limit the report to a specific NATS server
+        --cluster=CLUSTER  Limit the report to a specific Cluster
+        --tags=TAGS ...    Limit the report to nodes matching certain tags
+        --watch=WATCH      Display the results and update it every (WATCH)
+                           seconds
+    -j, --json             Produce JSON output
+
+server report connections [<flags>] [<limit>]
+    Report on connections
+
+        --account=ACCOUNT       Limit report to a specific account
+        --sort=subs             Sort by a specific property
+                                (in-bytes,out-bytes,in-msgs,out-msgs,uptime,cid,subs)
+        --top=1000              Limit results to the top results
+        --subject=SUBJECT       Limits responses only to those connections with
+                                matching subscription interest
+        --username=USERNAME     Limits responses only to those connections for a
+                                specific authentication username
+        --state=open            Limits responses only to those connections that
+                                are in a specific state (open, closed, all)
+        --closed-reason=REASON  Filter results based on a closed reason
+        --filter=FILTER         Expression based filter for connections
+        --host=HOST             Limit the report to a specific NATS server
+        --cluster=CLUSTER       Limit the report to a specific Cluster
+        --tags=TAGS ...         Limit the report to nodes matching certain tags
+        --watch=WATCH           Display the results and update it every (WATCH)
+                                seconds
+    -j, --json                  Produce JSON output
+
+server report cpu [<flags>] [<limit>]
+    Report on CPU usage
+
+        --host=HOST        Limit the report to a specific NATS server
+        --cluster=CLUSTER  Limit the report to a specific Cluster
+        --tags=TAGS ...    Limit the report to nodes matching certain tags
+        --watch=WATCH      Display the results and update it every (WATCH)
+                           seconds
+    -j, --json             Produce JSON output
+
+server report gateways [<flags>] [<limit>]
+    Repost on Gateway (Super Cluster) connections
+
+    --filter-name=FILTER-NAME  Limits responses to a certain name
+    --sort=cluster             Sorts by a specific property (server,cluster)
+    --host=HOST                Limit the report to a specific NATS server
+    --cluster=CLUSTER          Limit the report to a specific Cluster
+    --tags=TAGS ...            Limit the report to nodes matching certain tags
+    --watch=WATCH              Display the results and update it every (WATCH)
+                               seconds
+
+server report health [<flags>] [<limit>]
+    Report on Server health
+
+    -J, --[no-]js-enabled    Checks that JetStream should be enabled on all
+                             servers
+    -S, --[no-]server-only   Restricts the health check to the JetStream server
+                             only, do not check streams and consumers
+        --account=ACCOUNT    Check only a specific Account
+        --stream=STREAM      Check only a specific Stream
+        --consumer=CONSUMER  Check only a specific Consumer
+        --host=HOST          Limit the report to a specific NATS server
+        --cluster=CLUSTER    Limit the report to a specific Cluster
+        --tags=TAGS ...      Limit the report to nodes matching certain tags
+        --watch=WATCH        Display the results and update it every (WATCH)
+                             seconds
+
+server report jetstream [<flags>] [<limit>]
+    Report on JetStream activity
+
+        --account=ACCOUNT  Produce the report for a specific account
+        --sort=cluster     Sort by a specific property
+                           (name,cluster,streams,consumers,msgs,mbytes,mem,file,api,err
+        --[no-]compact     Compact server names
+    -l, --leaders          Show details about cluster leaders
+        --host=HOST        Limit the report to a specific NATS server
+        --cluster=CLUSTER  Limit the report to a specific Cluster
+        --tags=TAGS ...    Limit the report to nodes matching certain tags
+        --watch=WATCH      Display the results and update it every (WATCH)
+                           seconds
+
+server report leafnodes [<flags>] [<limit>]
+    Report on Leafnode connections
+
+    --account=ACCOUNT  Produce the report for a specific account
+    --sort=SORT        Sort by a specific property
+                       (server,name,account,subs,in-bytes,out-bytes,in-msgs,out-msgs)
+    --host=HOST        Limit the report to a specific NATS server
+    --cluster=CLUSTER  Limit the report to a specific Cluster
+    --tags=TAGS ...    Limit the report to nodes matching certain tags
+    --watch=WATCH      Display the results and update it every (WATCH) seconds
+
+server report mem [<flags>] [<limit>]
+    Report on Memory usage
+
+        --host=HOST        Limit the report to a specific NATS server
+        --cluster=CLUSTER  Limit the report to a specific Cluster
+        --tags=TAGS ...    Limit the report to nodes matching certain tags
+        --watch=WATCH      Display the results and update it every (WATCH)
+                           seconds
+    -j, --json             Produce JSON output
+
+server report routes [<flags>] [<limit>]
+    Report on Route (Cluster) connections
+
+    --sort=SORT        Sort by a specific property
+                       (server,cluster,name,account,subs,in-bytes,out-bytes)
+    --host=HOST        Limit the report to a specific NATS server
+    --cluster=CLUSTER  Limit the report to a specific Cluster
+    --tags=TAGS ...    Limit the report to nodes matching certain tags
+    --watch=WATCH      Display the results and update it every (WATCH) seconds
+
+server report downgrade [<flags>] <api>
+    List assets incompatible with the specified API level
+
+    --json  Output the downgrade report in JSON format
+    --all   Include consumers whose associated streams are incompatible with the
+            selected API level
+
+server request accounts [<flags>] [<wait>]
+    Show account details
+
+    --account=ACCOUNT  Retrieve information for a specific account
+
+server request connections [<flags>] [<wait>]
+    Show connection details
+
+    --sort=cid                Sort by a specific property
+    --subscriptions           Show subscriptions
+    --filter-cid=CID          Filter on a specific CID
+    --filter-state=open       Filter on a specific account state (open, closed,
+                              all)
+    --filter-user=USER        Filter on a specific username
+    --filter-account=ACCOUNT  Filter on a specific account
+    --filter-subject=SUBJECT  Limits responses only to those connections with
+                              matching subscription interest
+    --filter-empty            Only shows responses that have connections
+
+server request gateways [<flags>] [<wait>] [NAME]
+    Show gateway details
+
+    --filter-account=ACCOUNT  Show only a certain account in account detail
+    --accounts                Show account detail
+    --[no-]subscriptions      Show subscription details
+
+server request ipqueue [<flags>]
+    Show IP Queue details
+
+    --[no-]all       Shows all available information
+    --filter=FILTER  Filter results for specific queues
+
+server request jetstream-health [<flags>] [<wait>]
+    Request JetStream health status
+
+    -J, --[no-]js-enabled    Checks that JetStream should be enabled on all
+                             servers
+    -S, --[no-]server-only   Restricts the health check to the JetStream server
+                             only, do not check streams and consumers
+        --account=ACCOUNT    Check only a specific Account
+        --stream=STREAM      Check only a specific Stream
+        --consumer=CONSUMER  Check only a specific Consumer
+        --[no-]details       Include extended details about all failures
+
+server request jetstream [<flags>] [<wait>]
+    Show JetStream details
+
+    --account=ACCOUNT  Show statistics scoped to a specific account
+    --accounts         Include details about accounts
+    --streams          Include details about Streams
+    --consumer         Include details about Consumers
+    --config           Include details about configuration
+    --raft             Include details about raft groups
+    --leader           Request a response from the Meta-group leader only
+    --stream-leader    Request a response from Stream leaders only
+    --all              Include accounts, streams, consumers and configuration
+
+server request kick ID SERVER_ID
+    Disconnects a client immediately
+
+
+server request leafnodes [<flags>] [<wait>]
+    Show leafnode details
+
+    --subscriptions  Show subscription detail
+
+server request profile [<flags>] <profile> [<dir>]
+    Run a profile
+
+    --level=LEVEL  Set the debug level of the profile
+
+server request raft [<flags>]
+    Show RAFT state details
+
+    --account=ACCOUNT  Filters on an specific account
+    --group=GROUP      Filters on a specific group
+
+server request routes [<flags>] [<wait>]
+    Show route details
+
+    --subscriptions  Show subscription detail
+
+server request subscriptions [<flags>] [<wait>]
+    Show subscription information
+
+    --detail                  Include detail about all subscriptions
+    --filter-account=ACCOUNT  Filter on a specific account
+    --filter-subject=SUBJECT  Filter based on subscriptions matching this
+                              subject
+
+server request variables [<wait>]
+    Show runtime variables
+
+
+server watch api requests [<flags>]
+    Watch JS API Requests
+
+        --account=ACCOUNT       Limit to JetStream account (regex)
+    -n, --top=10                Shows top n requests
+        --rate=1m               Rate interval to calculate
+        --[no-]record-consumer  Record consumer names
+        --[no-]compact          Compact output of long asset and account names
+    -R, --reverse               Reverse sorting order
+
+server watch accounts [<flags>]
+    Watch account usage
+
+        --sort=conns  Sorts by a specific property (conns, recvb, recvm, sentb,
+                      sentm, slow, subs)
+    -n, --number=0    Amount of Accounts to show by the selected dimension
+
+server watch jetstream [<flags>]
+    Watch JetStream statistics
+
+        --sort=assets  Sorts by a specific property (api, assets, file, mem)
+    -n, --number=0     Amount of Accounts to show by the selected dimension
+
+server watch servers [<flags>]
+    Watch server statistics
+
+        --sort=conns  Sorts by a specific property (conns, cpu, gway, mem, name,
+                      recvb, recvm, route, sentb, sentm, slow, subs)
+    -n, --number=0    Amount of Accounts to show by the selected dimension
+
+service list [<flags>] [NAME]
+    List known Services
+
+    -j, --json  Show JSON output
+
+service info [<flags>] <service> [<id>]
+    Show Service information
+
+    -e, --endpoint=ENDPOINT  Filter shown endpoints using a regular expression
+    -j, --json               Show JSON output
+
+service stats [<flags>] <service> [<id>]
+    Report Service statistics
+
+    -j, --json  Show JSON output
+
+service ping [<service>]
+    Sends a ping to all Services
+
+
+service request [<flags>] <service> <endpoint> [<payload>]
+    Send a request to a service endpoint
+
+    -H, --header=HEADER ...    Headers in K:V form
+    -r, --raw                  Show only the reply body
+        --count=1              Send the request N times
+        --translate=TRANSLATE  Pipe each reply body through CMD before output
+        --[no-]templates       Enables template functions in body and subject
+        --force-stdin          Force reading payload from stdin
+        --send-on=eof          When to send data from stdin: 'eof' (default) or
+                               'newline'
+
+service serve [<flags>] <name>
+    Runs a demo Service
+
+    -H, --header=HEADER ...  Headers to add to responses using K:V format
+
+stream add [<flags>] [<stream>]
+    Create a new stream
+
+        --config=CONFIG            JSON file to read configuration from
+        --validate                 Only validates the configuration against the
+                                   official Schema
+        --output=FILE              Save configuration instead of creating
+        --subjects=SUBJECTS ...    Subjects that are consumed by the stream
+        --description=DESCRIPTION  Sets a contextual description for the stream
+        --storage=STORAGE          Storage backend to use (file, memory)
+        --compression=COMPRESSION  Compression algorithm to use (file storage
+                                   only)
+        --replicas=REPLICAS        When clustered, how many replicas of the data
+                                   to create
+        --tag=TAG ...              Place the stream on servers that has specific
+                                   tags (pass multiple times)
+        --cluster=CLUSTER          Place the stream on a specific cluster
+        --[no-]ack                 Acknowledge publishes
+        --retention=RETENTION      Defines a retention policy (limits, interest,
+                                   work)
+        --discard=DISCARD          Defines the discard policy (new, old)
+        --[no-]discard-per-subject  
+                                   Sets the 'new' discard policy and applies it
+                                   to every subject in the stream
+        --first-sequence=FIRST-SEQUENCE  
+                                   Sets the starting sequence
+        --max-age=""               Maximum age of messages to keep
+        --max-bytes=BYTES          Maximum bytes to keep
+        --max-consumers=-1         Maximum number of consumers to allow
+        --max-msg-size=BYTES       Maximum size any 1 message may be
+        --max-msgs=0               Maximum amount of messages to keep
+        --max-msgs-per-subject=0   Maximum amount of messages to keep per
+                                   subject
+        --dupe-window=""           Duration of the duplicate message tracking
+                                   window
+        --mirror=MIRROR            Completely mirror another stream
+        --source=STREAM ...        Source data from other streams, merging into
+                                   this one
+        --[no-]allow-batch         Allow atomic batch publishing
+        --[no-]allow-fast          Allow fast batch publishing
+        --allow-counter            Configures the stream as a distributed
+                                   counter
+        --[no-]allow-rollup        Allows roll-ups to be done by publishing
+                                   messages with special headers
+        --[no-]deny-delete         Deny messages from being deleted via the API
+        --[no-]deny-purge          Deny entire stream or subject purges via the
+                                   API
+        --[no-]allow-direct        Allows fast, direct, access to stream data
+                                   via the direct get API
+        --[no-]allow-mirror-direct  
+                                   Allows fast, direct, access to stream data
+                                   via the direct get API on mirrors
+        --allow-msg-ttl            Allows per-message TTL handling
+        --[no-]allow-schedules     Allows message schedules
+        --subject-del-markers-ttl=DURATION  
+                                   How long delete markers should persist in the
+                                   stream
+        --transform-source=SOURCE  Stream subject transform source
+        --transform-destination=DEST  
+                                   Stream subject transform destination
+        --metadata=META ...        Adds metadata to the stream
+        --republish-source=SOURCE  Republish messages to --republish-destination
+        --republish-destination=DEST  
+                                   Republish destination for messages in
+                                   --republish-source
+        --republish-headers        Republish only message headers, no bodies
+        --limit-consumer-inactive=THRESHOLD  
+                                   The maximum Consumer inactive threshold the
+                                   stream allows
+        --limit-consumer-max-pending=PENDING  
+                                   The maximum Consumer Ack Pending the stream
+                                   Allows
+        --persist-mode=PERSIST-MODE  
+                                   Configures the persistence mode
+    -j, --json                     Produce JSON output
+        --defaults                 Accept default values for all prompts
+
+stream ls [<flags>]
+    List all known streams
+
+        --subject=SUBJECT  Limit the list to streams with matching subjects
+    -n, --names            Show just the stream names
+    -j, --json             Produce JSON output
+
+stream report [<flags>]
+    Reports on stream statistics
+
+        --subject=SUBJECT  Limit the report to streams with matching subjects
+        --cluster=CLUSTER  Limit report to streams within a specific cluster
+    -o, --consumers        Sort by number of Consumers
+    -m, --messages         Sort by number of Messages
+    -n, --name             Sort by stream name
+    -t, --storage          Sort by Storage type
+    -r, --raw              Show un-formatted numbers
+        --dot=DOT          Produce a GraphViz graph of replication topology
+    -l, --leaders          Show details about cluster leaders
+
+stream find [<flags>]
+    Finds streams matching certain criteria
+
+        --server-name=SERVER-NAME  Display streams present on a regular
+                                   expression matched server
+        --cluster=CLUSTER          Display streams present on a regular
+                                   expression matched cluster
+        --empty                    Display streams with no messages
+        --idle=DURATION            Display streams with no new messages or
+                                   consumer deliveries for a period
+        --created=DURATION         Display streams created longer ago than
+                                   duration
+        --consumers=THRESHOLD      Display streams with fewer consumers than
+                                   threshold
+        --subject=SUBJECT          Filters streams by those with interest
+                                   matching a subject or wildcard
+        --replicas=REPLICAS        Display streams with fewer or equal replicas
+                                   than the value
+        --sourced                  Display that sources data from other streams
+        --mirrored                 Display that mirrors data from other streams
+        --leader=SERVER            Display only clustered streams with a
+                                   specific leader
+    -n, --names                    Show just the stream names
+        --[no-]invert              Invert the check - before becomes after,
+                                   with becomes without
+        --expression=EXPRESSION    Match streams using an expression language
+        --api-level=API-LEVEL      Match streams that support at least the given
+                                   api level
+
+stream info [<flags>] [<stream>]
+    Stream information
+
+    -j, --json       Produce JSON output
+        --state      Shows only the stream state
+        --no-select  Do not select streams from a list
+
+stream state [<flags>] [<stream>]
+    Stream state
+
+    -j, --json       Produce JSON output
+        --no-select  Do not select streams from a list
+
+stream subjects [<flags>] [<stream>] [<filter>]
+    Query subjects held in a stream
+
+    -j, --json           Produce JSON output
+        --sort=messages  Adjusts the sorting order (name, messages)
+    -R, --reverse        Reverse sort servers
+        --[no-]names     List only subject names
+
+stream edit [<flags>] [<stream>]
+    Edits an existing stream
+
+        --config=CONFIG            JSON file to read configuration from
+    -f, --force                    Force edit without prompting
+    -i, --[no-]interactive         Edit the configuring using your editor
+        --dry-run                  Only shows differences, do not edit the
+                                   stream
+        --subjects=SUBJECTS ...    Subjects that are consumed by the stream
+        --description=DESCRIPTION  Sets a contextual description for the stream
+        --compression=COMPRESSION  Compression algorithm to use (file storage
+                                   only)
+        --replicas=REPLICAS        When clustered, how many replicas of the data
+                                   to create
+        --tag=TAG ...              Place the stream on servers that has specific
+                                   tags (pass multiple times)
+        --cluster=CLUSTER          Place the stream on a specific cluster
+        --[no-]ack                 Acknowledge publishes
+        --retention=RETENTION      Defines a retention policy (limits, interest,
+                                   work)
+        --discard=DISCARD          Defines the discard policy (new, old)
+        --[no-]discard-per-subject  
+                                   Sets the 'new' discard policy and applies it
+                                   to every subject in the stream
+        --max-age=""               Maximum age of messages to keep
+        --max-bytes=BYTES          Maximum bytes to keep
+        --max-consumers=-1         Maximum number of consumers to allow
+        --max-msg-size=BYTES       Maximum size any 1 message may be
+        --max-msgs=0               Maximum amount of messages to keep
+        --max-msgs-per-subject=0   Maximum amount of messages to keep per
+                                   subject
+        --dupe-window=""           Duration of the duplicate message tracking
+                                   window
+        --mirror=MIRROR            Completely mirror another stream
+        --no-mirror                Removes current mirror configuration
+        --source=STREAM ...        Source data from other streams, merging into
+                                   this one
+        --[no-]allow-batch         Allow atomic batch publishing
+        --[no-]allow-fast          Allow fast batch publishing
+        --allow-counter            Configures the stream as a distributed
+                                   counter
+        --[no-]allow-rollup        Allows roll-ups to be done by publishing
+                                   messages with special headers
+        --[no-]deny-delete         Deny messages from being deleted via the API
+        --[no-]deny-purge          Deny entire stream or subject purges via the
+                                   API
+        --[no-]allow-direct        Allows fast, direct, access to stream data
+                                   via the direct get API
+        --[no-]allow-mirror-direct  
+                                   Allows fast, direct, access to stream data
+                                   via the direct get API on mirrors
+        --allow-msg-ttl            Allows per-message TTL handling
+        --[no-]allow-schedules     Allows message schedules
+        --subject-del-markers-ttl=DURATION  
+                                   How long delete markers should persist in the
+                                   stream
+        --transform-source=SOURCE  Stream subject transform source
+        --transform-destination=DEST  
+                                   Stream subject transform destination
+        --no-transform             Removes current subject transform
+                                   configuration
+        --metadata=META ...        Adds metadata to the stream
+        --republish-source=SOURCE  Republish messages to --republish-destination
+        --republish-destination=DEST  
+                                   Republish destination for messages in
+                                   --republish-source
+        --republish-headers        Republish only message headers, no bodies
+        --no-republish             Removes current republish configuration
+    -j, --json                     Produce JSON output
+
+stream rm [<flags>] [<stream>]
+    Removes a stream
+
+    -f, --force  Force removal without prompting
+
+stream purge [<flags>] [<stream>]
+    Bulk removes messages from a stream
+
+    -j, --json             Produce JSON output
+    -f, --force            Force removal without prompting
+        --subject=SUBJECT  Limits the purge to a specific subject
+        --seq=SEQUENCE     Purge up to but not including a specific message
+                           sequence
+        --keep=MESSAGES    Keeps a certain number of messages after the purge
+
+stream copy [<flags>] <source> <destination>
+    Creates a new stream based on the configuration of another, does not copy
+    data
+
+        --subjects=SUBJECTS ...    Subjects that are consumed by the stream
+        --description=DESCRIPTION  Sets a contextual description for the stream
+        --storage=STORAGE          Storage backend to use (file, memory)
+        --compression=COMPRESSION  Compression algorithm to use (file storage
+                                   only)
+        --replicas=REPLICAS        When clustered, how many replicas of the data
+                                   to create
+        --tag=TAG ...              Place the stream on servers that has specific
+                                   tags (pass multiple times)
+        --cluster=CLUSTER          Place the stream on a specific cluster
+        --[no-]ack                 Acknowledge publishes
+        --retention=RETENTION      Defines a retention policy (limits, interest,
+                                   work)
+        --discard=DISCARD          Defines the discard policy (new, old)
+        --[no-]discard-per-subject  
+                                   Sets the 'new' discard policy and applies it
+                                   to every subject in the stream
+        --first-sequence=FIRST-SEQUENCE  
+                                   Sets the starting sequence
+        --max-age=""               Maximum age of messages to keep
+        --max-bytes=BYTES          Maximum bytes to keep
+        --max-consumers=-1         Maximum number of consumers to allow
+        --max-msg-size=BYTES       Maximum size any 1 message may be
+        --max-msgs=0               Maximum amount of messages to keep
+        --max-msgs-per-subject=0   Maximum amount of messages to keep per
+                                   subject
+        --dupe-window=""           Duration of the duplicate message tracking
+                                   window
+        --mirror=MIRROR            Completely mirror another stream
+        --source=STREAM ...        Source data from other streams, merging into
+                                   this one
+        --[no-]allow-batch         Allow atomic batch publishing
+        --[no-]allow-fast          Allow fast batch publishing
+        --allow-counter            Configures the stream as a distributed
+                                   counter
+        --[no-]allow-rollup        Allows roll-ups to be done by publishing
+                                   messages with special headers
+        --[no-]deny-delete         Deny messages from being deleted via the API
+        --[no-]deny-purge          Deny entire stream or subject purges via the
+                                   API
+        --[no-]allow-direct        Allows fast, direct, access to stream data
+                                   via the direct get API
+        --[no-]allow-mirror-direct  
+                                   Allows fast, direct, access to stream data
+                                   via the direct get API on mirrors
+        --allow-msg-ttl            Allows per-message TTL handling
+        --[no-]allow-schedules     Allows message schedules
+        --subject-del-markers-ttl=DURATION  
+                                   How long delete markers should persist in the
+                                   stream
+        --transform-source=SOURCE  Stream subject transform source
+        --transform-destination=DEST  
+                                   Stream subject transform destination
+        --metadata=META ...        Adds metadata to the stream
+        --republish-source=SOURCE  Republish messages to --republish-destination
+        --republish-destination=DEST  
+                                   Republish destination for messages in
+                                   --republish-source
+        --republish-headers        Republish only message headers, no bodies
+        --limit-consumer-inactive=THRESHOLD  
+                                   The maximum Consumer inactive threshold the
+                                   stream allows
+        --limit-consumer-max-pending=PENDING  
+                                   The maximum Consumer Ack Pending the stream
+                                   Allows
+        --persist-mode=PERSIST-MODE  
+                                   Configures the persistence mode
+    -j, --json                     Produce JSON output
+
+stream rmm [<flags>] [<stream>] [<id>]
+    Securely removes an individual message from a stream
+
+    -f, --force  Force removal without prompting
+
+stream view [<flags>] [<stream>] [<size>]
+    View messages in a stream
+
+    --id=ID                Start at a specific message Sequence
+    --since=SINCE          Delivers messages received since a duration like
+                           1d3h5m2s
+    --raw                  Show the raw data received
+    --translate=TRANSLATE  Translate the message data by running it through the
+                           given command before output
+    --subject=SUBJECT      Filter the stream using a subject
+
+stream get [<flags>] [<stream>] [<id>]
+    Retrieves a specific message from a Stream
+
+    -S, --last-for=SUBJECT     Retrieves the message for a specific subject
+    -j, --json                 Produce JSON output
+        --translate=TRANSLATE  Translate the message data by running it through
+                               the given command before output
+
+stream backup [<flags>] <stream> <target>
+    Creates a backup of a stream over the NATS network
+
+    --[no-]progress            Enables or disables progress reporting using a
+                               progress bar
+    --check                    Checks the stream for health prior to backup
+    --[no-]consumers           Enable or disable consumer backups
+    --chunk-size=CHUNK-SIZE    Sets a specific chunk size that the server will
+                               send
+    --window-size=WINDOW-SIZE  Sets a specific window size that the server will
+                               send
+
+stream restore [<flags>] <file>
+    Restore a stream over the NATS network
+
+    --[no-]progress      Enables or disables progress reporting using a progress
+                         bar
+    --config=CONFIG      Load a different configuration when restoring the
+                         stream
+    --cluster=CLUSTER    Place the stream in a specific cluster
+    --tag=TAG ...        Place the stream on servers that has specific tags
+                         (pass multiple times)
+    --replicas=REPLICAS  Override how many replicas of the data to create
+
+stream seal [<flags>] <stream>
+    Seals a stream preventing further updates
+
+    -f, --force  Force sealing without prompting
+
+stream gaps [<flags>] [<stream>]
+    Detect gaps in the stream content that would be reported as deleted messages
+
+    -f, --force          Act without prompting
+        --[no-]progress  Enable progress bar
+        --json           Show detected gaps in JSON format
+
+stream graph [<stream>]
+    View a graph of stream activity
+
+
+stream cluster step-down [<flags>] [<stream>]
+    Force a new leader election by standing down the current leader
+
+        --preferred=PREFERRED  Prefer placing the leader on a specific host
+    -f, --force                Force leader step down ignoring current leader
+
+stream cluster balance [<flags>]
+    Balance stream leaders
+
+    --server-name=SERVER-NAME  Balance streams present on a regular expression
+                               matched server
+    --cluster=CLUSTER          Balance streams present on a regular expression
+                               matched cluster
+    --empty                    Balance streams with no messages
+    --idle=DURATION            Balance streams with no new messages or consumer
+                               deliveries for a period
+    --created=DURATION         Balance streams created longer ago than duration
+    --consumers=THRESHOLD      Balance streams with fewer consumers than
+                               threshold
+    --subject=SUBJECT          Filters streams by those with interest matching a
+                               subject or wildcard and balances them
+    --replicas=REPLICAS        Balance streams with fewer or equal replicas than
+                               the value
+    --sourced                  Balance that sources data from other streams
+    --mirrored                 Balance that mirrors data from other streams
+    --leader=SERVER            Balance only clustered streams with a specific
+                               leader
+    --[no-]invert              Invert the check - before becomes after, with
+                               becomes without
+    --expression=EXPRESSION    Balance matching streams using an expression
+                               language
+
+stream cluster peer-remove [<flags>] [<stream>] [<peer>]
+    Removes a peer from the stream cluster
+
+    -f, --force  Force sealing without prompting
+
+subscribe [<flags>] [<subjects>...]
+    Generic subscription client
+
+        --queue=QUEUE              Subscribe to a named queue group
+        --durable=DURABLE          Use a durable consumer (requires JetStream)
+    -r, --raw                      Show the raw data received
+        --translate=TRANSLATE      Translate the message data by running it
+                                   through the given command before output
+        --[no-]ack                 Acknowledge JetStream message that have the
+                                   correct metadata
+        --match-replies            Match replies to requests
+    -i, --inbox                    Subscribes to a generated inbox
+        --count=COUNT              Quit after receiving this many messages
+        --dump=DIRECTORY           Dump received messages to files, 1 file per
+                                   message. Specify - for null terminated STDOUT
+                                   for use with xargs -0
+        --headers-only             Do not render any data, shows only headers
+        --subjects-only            Prints only the messages' subjects
+        --start-sequence=SEQUENCE  Starts at a specific Stream sequence
+                                   (requires JetStream)
+        --all                      Delivers all messages found in the Stream
+                                   (requires JetStream)
+        --new                      Delivers only future messages (requires
+                                   JetStream)
+        --last                     Delivers the most recent and all future
+                                   messages (requires JetStream)
+        --since=DURATION           Delivers messages received since a duration
+                                   like 1d3h5m2s(requires JetStream)
+        --last-per-subject         Deliver the most recent messages for each
+                                   subject in the Stream (requires JetStream)
+    -T, --terminate-at-end         Stops consuming messages from JetStream once
+                                   all messages were received
+        --stream=STREAM            Subscribe to a specific stream (required
+                                   JetStream)
+    -I, --ignore-subject=SUBJECT ...  
+                                   Subjects for which corresponding messages
+                                   will be ignored and therefore not shown in
+                                   the output
+        --wait=WAIT                Unsubscribe after this amount of time without
+                                   any traffic
+        --report-subjects          Subscribes to subject patterns and builds
+                                   a de-duplicated report of active subjects
+                                   receiving data
+        --report-subscriptions     Subscribes to subject patterns and builds a
+                                   de-duplicated report of active subscriptions
+                                   receiving data
+        --report-top=10            Number of subjects to show when doing
+                                   'report-subjects'
+    -t, --timestamp                Show timestamps in output
+    -d, --delta-time               Show time since start in output
+        --graph                    Graph the rate of messages received
+        --direct                   Subscribe using batched direct gets instead
+                                   of a durable consumer (requires JetStream)
+
+top [<flags>] <name>
+    Shows top-like statistic for connections on a specific server
+
+    -n, --conns=1024           Maximum number of connections to show
+    -d, --interval=1           Refresh interval
+        --sort=cid             Sort connections by
+        --lookup               Looks up client addresses in DNS
+    -o, --output=OUTPUT        Saves the first snapshot to a file
+        --delimiter=DELIMITER  Specifies a output delimiter, defaults to
+                               grid-like text
+    -b, --raw                  Show raw bytes
+    -r, --max-refresh=-1       Maximum refreshes
+        --subs                 Shows the subscriptions column
+
+trace [<flags>] <subject> [<payload>]
+    Trace message delivery within an NATS network
+
+        --deliver            Deliver the message to the final destination
+    -T, --timestamp          Show event timestamps
+    -H, --header=HEADER ...  Adds headers to the trace message using K:V format
