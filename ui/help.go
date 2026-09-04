@@ -160,7 +160,7 @@ var keymapSections = []struct {
 		{"pgup/pgdn", "page"},
 		{"home/end", "first / last"},
 		{"→/← space *", "expand / collapse"},
-		{"/", "filter"},
+		{"/", "filter (arrows edit it)"},
 		{"enter", "details"},
 		{"e", "edit"},
 		{"a / A", "add child / stream"},
@@ -210,7 +210,7 @@ var keymapSections = []struct {
 	{"Live screens", []keyDesc{
 		{"↑/↓", "browse (stops following)"},
 		{"end / space", "follow again"},
-		{"/", "filter"},
+		{"/", "filter (arrows edit it)"},
 		{"c", "clear"},
 		{"enter", "show the entry"},
 		{"p", "publish"},
