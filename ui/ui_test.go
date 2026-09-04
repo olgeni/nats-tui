@@ -871,6 +871,9 @@ func TestTabbedLongLineKeepsTheLastLines(t *testing.T) {
 	}
 	lines = append(lines, "\tKEY: "+strings.Repeat("x", 300), "}", "THE END")
 	m.showText("cfg", strings.Join(lines, "\n"), "")
+	if rows := strings.Count(m.View(), "\n") + 1; rows != 10 {
+		t.Errorf("the text screen uses %d rows of 10", rows)
+	}
 	m.vp.GotoBottom()
 	v := m.View()
 	if !strings.Contains(v, "THE END") || !strings.Contains(v, "}") || !strings.Contains(v, "        KEY: xxx") {

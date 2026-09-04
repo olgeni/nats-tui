@@ -408,7 +408,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.vp.Width, m.vp.Height = m.width, max(3, m.height-3)
+		// every viewport screen is a title bar, the body and a help line
+		m.vp.Width, m.vp.Height = m.width, max(3, m.height-2)
 		if m.editor != nil {
 			m.editor.setSize(m.width, m.height)
 		}
