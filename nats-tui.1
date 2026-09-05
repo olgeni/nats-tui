@@ -162,22 +162,10 @@ Watch a bucket or an object store live.
 Events: JetStream advisories and metrics, server events.
 .It Ic I
 Account information.
-.It Ic M
-Monitoring: server list, info, ping, the server reports (connections,
-jetstream, accounts, health, cpu, mem, routes, gateways, leafnodes,
-downgrade), the checks
-.Pq Ql nats server check
-of the selected stream, consumer or bucket and of the cluster, a server, a
-request or a credential, subject mappings, rtt, account info and tls.
-The server commands need a system account context.
-.It Ic T
-Reports: stream, consumer, account statistics, stream find, consumer find,
-stream gaps.
-.It Ic L
-Cluster: step down the leader of a stream, a consumer or the meta group,
-remove a peer, balance the leaders, reset or unpin a consumer, reload a
-server's configuration, kick a client, purge an account.
-The server commands need a system account context.
+.It Ic M Ic T Ic L
+The menus, described under
+.Sx MENUS :
+monitoring, reports and the cluster commands.
 .It Ic C
 Contexts: list, use, select, add, edit, copy, delete, validate.
 .It Ic S
@@ -206,6 +194,64 @@ interval.
 Key map, help.
 .It Ic q
 Quit.
+.El
+.Sh MENUS
+.Ic M ,
+.Ic T
+and
+.Ic L
+open a menu in the manner of the Lotus 1-2-3 control panel: two rows above
+the tree, the first holding the items of the level you are in and the second
+the items of whichever one is highlighted, so the level below is read before
+it is entered.
+.Pp
+.Bl -tag -width "enter / down" -compact
+.It Ic \(<- \(->
+Move along the level.
+.It Ic letter
+The letter picked out in each word chooses that item at once.
+.It Ic enter \(or \(da
+Open a group, or run a command.
+.It Ic esc \(or \(ua
+Leave one level; at the top, close the menu.
+.It Ic M T L
+The key that opened the menu closes it from anywhere.
+.El
+.Pp
+So
+.Ic M T
+is
+.Ql nats rtt
+and
+.Ic M S L
+is
+.Ql nats server list ,
+typed as fast as the fingers go.
+Nothing else reaches the tree while a menu is up, and
+.Ic /
+stays the filter.
+The accelerator is the first letter of a word unless the item names another
+one, which is how Connections and Cpu keep a letter each.
+.Bl -tag -width Ds
+.It Ic M Pq Monitor
+Report (connections, jetstream, accounts, health, cpu, mem, routes,
+gateways, leafnodes, downgrade), Check, Server (list, info, ping, mappings,
+account info), Account (info, connections, tls) and Rtt.
+The server commands need a system account context; rtt and the account
+commands work with any user.
+Check begins with This, the
+.Ql nats server check
+of the selected stream, consumer or bucket, and goes on to jetstream,
+connection, meta, server, request and credential, the last few behind a
+small editor for their thresholds.
+.It Ic T Pq Reports
+Streams, Consumers and Account (the three reports), Find (stream find,
+consumer find), Gaps, and on a service row Service (info, stats).
+.It Ic L Pq Cluster
+The commands for the selected stream or consumer first (Stepdown, Peer;
+Reset, Unpin), then Balance (streams, consumers), Meta (the JetStream meta
+group: stepdown, peer), Reload, Kick and Purge.
+Each one is a plan, previewed and confirmed like the others.
 .El
 .Sh EDITORS
 Fields are moved with

@@ -36,39 +36,37 @@ its consumers), the key-value buckets, the object stores and the services.
 The header shows the server, its version and cluster, the round-trip time,
 the JetStream usage of the account and the credentials in use.
 
-| Key                                | Action                                                                                                                                                                                                                                |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `↑/↓` `j/k` `pgup/pgdn` `home/end` | move                                                                                                                                                                                                                                  |
-| `→` / `←` / `space` / `*`          | expand / collapse a stream or a section (`*`: all)                                                                                                                                                                                    |
-| `/`                                | filter by name, subject or description (`esc` clears)                                                                                                                                                                                 |
-| `enter`                            | details of the entity (a service is also asked for its request statistics); `J` toggles its raw JSON                                                                                                                                  |
-| `e`                                | edit the stream, consumer, bucket, object store or context                                                                                                                                                                            |
-| `a`                                | add what the row holds: a consumer (on a stream), a key (on a bucket), a file (on an object store), a bucket or store (on their section), a stream elsewhere                                                                          |
-| `A`                                | add a stream                                                                                                                                                                                                                          |
-| `d` / `del`                        | delete the stream, consumer, bucket or object store                                                                                                                                                                                   |
-| `P`                                | purge a stream: everything, one subject, up to a sequence, or all but the last few                                                                                                                                                    |
-| `v`                                | messages of a stream, one page at a time (`[` `]` page, `g` jumps to a sequence, `f` keeps a subject, `d` deletes a message); on a bucket its keys, on an object store its objects                                                    |
-| `t`                                | subjects held in a stream with their message counts                                                                                                                                                                                   |
-| `n`                                | next messages of a pull consumer (`nats consumer next`), acknowledged, nak'ed, terminated or left alone                                                                                                                               |
-| `u`                                | pause / resume a consumer                                                                                                                                                                                                             |
-| `K` / `O`                          | keys of a bucket (put, edit, history, revert, delete, purge, watch) / objects of an object store (put, get, delete, watch); an edited key is written with `nats kv update` at the revision it was read at                             |
-| `s`                                | subscribe live to a stream's subjects, or to what you type                                                                                                                                                                            |
-| `p` / `R`                          | publish a message (`nats pub`) / send a request and show the reply (`nats request`)                                                                                                                                                   |
-| `w`                                | watch a bucket or an object store live                                                                                                                                                                                                |
-| `E`                                | events: JetStream advisories and metrics, server events                                                                                                                                                                               |
-| `I`                                | account information                                                                                                                                                                                                                   |
-| `M`                                | monitoring: server list, info, ping and reports, `nats server check` of the selected stream, consumer or bucket and the other checks, subject mappings, rtt, account info and tls (the server commands need a system account context) |
-| `T`                                | reports: stream report, consumer report, account statistics, `stream find`, `consumer find`, `stream gaps`                                                                                                                            |
-| `L`                                | cluster: leader step-down of a stream, a consumer or the meta group, peer removal, leader balancing, consumer reset and unpin, config reload, kick a client, purge an account (system account for the server commands)                |
-| `C`                                | contexts: list, use, select as default, add, edit, copy, delete, validate                                                                                                                                                             |
-| `S`                                | use another context (every command then carries `--context`)                                                                                                                                                                          |
-| `b` / `B`                          | backup a stream to a directory, or every stream of the account elsewhere / restore a stream or an account backup                                                                                                                      |
-| `y`                                | copy a stream's configuration to a new stream, which needs subjects of its own; on a consumer, copy the consumer                                                                                                                      |
-| `x`                                | seal a stream or an object store (irreversible)                                                                                                                                                                                       |
-| `m`                                | toggle the mouse (or start with `-mouse`): click a row to select it, click it again to open it, wheel scrolls; in editors a click focuses a field, a second click edits or toggles it; hold shift to select text                      |
-| `ctrl+r`                           | auto-refresh: re-read the server every 5 seconds, or the `-refresh` interval, on the main screen, the details and the tables                                                                                                          |
-| `r`                                | re-read the server                                                                                                                                                                                                                    |
-| `h` / `?`                          | key map / help, `q` quit                                                                                                                                                                                                              |
+| Key                                | Action                                                                                                                                                                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `↑/↓` `j/k` `pgup/pgdn` `home/end` | move                                                                                                                                                                                                             |
+| `→` / `←` / `space` / `*`          | expand / collapse a stream or a section (`*`: all)                                                                                                                                                               |
+| `/`                                | filter by name, subject or description (`esc` clears)                                                                                                                                                            |
+| `enter`                            | details of the entity (a service is also asked for its request statistics); `J` toggles its raw JSON                                                                                                             |
+| `e`                                | edit the stream, consumer, bucket, object store or context                                                                                                                                                       |
+| `a`                                | add what the row holds: a consumer (on a stream), a key (on a bucket), a file (on an object store), a bucket or store (on their section), a stream elsewhere                                                     |
+| `A`                                | add a stream                                                                                                                                                                                                     |
+| `d` / `del`                        | delete the stream, consumer, bucket or object store                                                                                                                                                              |
+| `P`                                | purge a stream: everything, one subject, up to a sequence, or all but the last few                                                                                                                               |
+| `v`                                | messages of a stream, one page at a time (`[` `]` page, `g` jumps to a sequence, `f` keeps a subject, `d` deletes a message); on a bucket its keys, on an object store its objects                               |
+| `t`                                | subjects held in a stream with their message counts                                                                                                                                                              |
+| `n`                                | next messages of a pull consumer (`nats consumer next`), acknowledged, nak'ed, terminated or left alone                                                                                                          |
+| `u`                                | pause / resume a consumer                                                                                                                                                                                        |
+| `K` / `O`                          | keys of a bucket (put, edit, history, revert, delete, purge, watch) / objects of an object store (put, get, delete, watch); an edited key is written with `nats kv update` at the revision it was read at        |
+| `s`                                | subscribe live to a stream's subjects, or to what you type                                                                                                                                                       |
+| `p` / `R`                          | publish a message (`nats pub`) / send a request and show the reply (`nats request`)                                                                                                                              |
+| `w`                                | watch a bucket or an object store live                                                                                                                                                                           |
+| `E`                                | events: JetStream advisories and metrics, server events                                                                                                                                                          |
+| `I`                                | account information                                                                                                                                                                                              |
+| `M` `T` `L`                        | the menus (see below): monitoring, reports, cluster. Each opens a two-row control panel over the tree                                                                                                            |
+| `C`                                | contexts: list, use, select as default, add, edit, copy, delete, validate                                                                                                                                        |
+| `S`                                | use another context (every command then carries `--context`)                                                                                                                                                     |
+| `b` / `B`                          | backup a stream to a directory, or every stream of the account elsewhere / restore a stream or an account backup                                                                                                 |
+| `y`                                | copy a stream's configuration to a new stream, which needs subjects of its own; on a consumer, copy the consumer                                                                                                 |
+| `x`                                | seal a stream or an object store (irreversible)                                                                                                                                                                  |
+| `m`                                | toggle the mouse (or start with `-mouse`): click a row to select it, click it again to open it, wheel scrolls; in editors a click focuses a field, a second click edits or toggles it; hold shift to select text |
+| `ctrl+r`                           | auto-refresh: re-read the server every 5 seconds, or the `-refresh` interval, on the main screen, the details and the tables                                                                                     |
+| `r`                                | re-read the server                                                                                                                                                                                               |
+| `h` / `?`                          | key map / help, `q` quit                                                                                                                                                                                         |
 
 ![details of a stream](doc/details.png)
 
@@ -79,6 +77,45 @@ stream list. The counts shown before that come from the stream state.
 
 Sealed streams and paused consumers are shown in yellow; consumers are
 muted under their stream.
+
+## Menus
+
+`M`, `T` and `L` open a menu in the manner of the Lotus 1-2-3 control panel:
+two rows above the tree, the first holding the items of the level you are in
+and the second the items of whichever one is highlighted, so the level below
+is read before it is entered.
+
+```
+ Monitor   Report   Check   Server   Account   Rtt
+ Connections  Jetstream  Accounts  Health  Cpu  Mem  Routes  Gateways  Leafnodes  Downgrade
+```
+
+`←→` move along a level, the letter picked out in each word chooses that item
+at once, `enter` or `↓` opens a group or runs a command, `esc` or `↑` leaves
+one level and closes the menu at the top, and the key that opened it closes it
+from anywhere. So `MT` is `nats rtt` and `MSL` is `nats server list`, typed as
+fast as the fingers go. Nothing else reaches the tree while a menu is up, and
+`/` stays the filter.
+
+The accelerator is the first letter of a word unless the item names another
+one, which is how `Connections` and `Cpu` keep a letter each.
+
+- **`M` Monitor** — **Report** (connections, jetstream, accounts, health, cpu,
+  mem, routes, gateways, leafnodes, downgrade), **Check**, **Server** (list,
+  info, ping, mappings, account info), **Account** (info, connections, tls)
+  and **Rtt**. The server commands need a system account context; `rtt` and
+  the account commands work with any user. **Check** begins with **This**, the
+  `nats server check` of the selected stream, consumer or bucket, and goes on
+  to jetstream, connection, meta, server, request and credential, the last few
+  behind a small editor for their thresholds.
+- **`T` Reports** — **Streams**, **Consumers**, **Account** (the three
+  reports), **Find** (`stream find`, `consumer find`), **Gaps**, and on a
+  service row **Service** (info, stats).
+- **`L` Cluster** — the commands for the selected stream or consumer first
+  (**Stepdown**, **Peer**; **Reset**, **Unpin**), then **Balance** (streams,
+  consumers), **Meta** (the JetStream meta group: stepdown, peer), **Reload**,
+  **Kick** and **Purge**. Each one is a plan, previewed and confirmed like the
+  others.
 
 ## Editors
 
