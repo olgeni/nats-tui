@@ -133,6 +133,17 @@ type Model struct {
 	busyDetail string
 
 	tbl *table // sub-table screen (contexts, messages, keys, objects, …)
+	// tref carries the cursor of a table being reloaded, so r and the
+	// automatic reload come back where the user was instead of at the top.
+	// A fetched table (keys, messages, objects…) is rebuilt from the server,
+	// so nothing else would remember the position. quiet keeps the busy
+	// screen out of the way when the reload was not asked for by hand.
+	tref struct {
+		on     bool
+		quiet  bool
+		cursor int
+		offset int
+	}
 
 	lv     *live // live screen (subscribe, watch, events)
 	lvBack screen
@@ -393,6 +404,9 @@ func (m *Model) runPlan(p *cli.Plan, after func(m *Model) tea.Cmd) tea.Cmd {
 
 // busy switches to the busy screen and runs work.
 func (m *Model) busy(msg string, work func() tea.Msg) tea.Cmd {
+	if m.tref.quiet {
+		return work // an automatic table refresh must not flash the busy screen
+	}
 	m.scr = scrBusy
 	m.busyMsg, m.busyDetail = msg, ""
 	return work
@@ -492,7 +506,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.scr = scrMain
 			if m.planBack == scrTable && m.tbl != nil && m.tbl.kind == tkContexts {
 				m.scr = scrTable
-				m.refreshTable()
+				m.refreshTable(false)
 			}
 			m.planBack = scrMain
 			return m, nil
@@ -517,16 +531,30 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.refreshDetail()
 		}
 		if m.tbl != nil && m.scr == scrTable {
-			return m, m.refreshTable()
+			return m, m.refreshTable(true)
 		}
 		return m, nil
 	case tableMsg:
+		tr := m.tref
+		m.tref.on, m.tref.quiet = false, false
 		if msg.err != nil {
+			if tr.quiet {
+				m.setError(msg.err.Error()) // stay where we are; the next tick tries again
+				return m, nil
+			}
 			m.scr = m.planBack
 			if m.scr == scrBusy {
 				m.scr = scrMain
 			}
 			m.setError(msg.err.Error())
+			return m, nil
+		}
+		if tr.on {
+			msg.tbl.setSize(m.width, m.height)
+			msg.tbl.cursor, msg.tbl.offset = tr.cursor, tr.offset
+			msg.tbl.clamp()
+			m.tbl = msg.tbl
+			m.scr = scrTable
 			return m, nil
 		}
 		m.scr = scrMain

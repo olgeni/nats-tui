@@ -172,13 +172,17 @@ func (m *Model) openTable(t *table) tea.Cmd {
 
 // refreshTable rebuilds the current table after a reload; tables that
 // read the server do so behind the busy screen.
-func (m *Model) refreshTable() tea.Cmd {
+func (m *Model) refreshTable(quiet bool) tea.Cmd {
 	t := m.tbl
 	if t == nil {
 		return nil
 	}
 	cur, off := t.cursor, t.offset
+	// the fetched kinds come back through tableMsg, which puts the cursor
+	// back from here; quiet also keeps the busy screen away
+	m.tref.on, m.tref.quiet, m.tref.cursor, m.tref.offset = true, quiet, cur, off
 	keep := func(nt *table) tea.Cmd {
+		m.tref.on, m.tref.quiet = false, false
 		nt.setSize(m.width, m.height)
 		nt.cursor, nt.offset = cur, off
 		nt.clamp()
@@ -282,7 +286,7 @@ func (m *Model) updateTable(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.vp.SetXOffset(0)
 		m.prevScr, m.scr = scrTable, scrHelp
 	case "r":
-		return m, m.refreshTable()
+		return m, m.refreshTable(false)
 	case "m":
 		return m, m.toggleMouse()
 	default:
@@ -334,7 +338,7 @@ func (m *Model) contextsTable() *table {
 	t := &table{kind: tkContexts, title: "Contexts in " + dir,
 		desc:  "The connection settings nats keeps under " + dir + "; the selected one is what nats and nats-tui use without --context.",
 		cols:  []tcol{{"Name", 22}, {"", 3}, {"Server", 0}, {"Credentials", 0}, {"JetStream", 14}, {"Description", 0}},
-		help:  helpLine("enter/u", "use", "S", "select as default", "a", "add", "e", "edit", "y", "copy", "d", "delete", "V", "validate", "esc", "back"),
+		help:  helpLine("enter/u", "use", "S", "select as default", "a", "add", "e", "edit", "y", "copy", "d", "delete", "V", "validate", "r", "reload", "esc", "back"),
 		empty: "no contexts (a adds one; without any, nats connects to localhost:4222)"}
 	names := cli.SortedContextNames(knownContexts())
 	selected := selectedContext()
@@ -559,7 +563,7 @@ func messagesTable(stream string, seq uint64, filter string, msgs []cli.Message,
 	}
 	t := &table{kind: tkMessages, stream: stream, seq: seq, filter: filter, title: "Messages of stream " + stream, desc: desc,
 		cols:  []tcol{{"Seq", 9}, {"Time", 19}, {"Subject", 0}, {"Size", 9}, {"Hdr", 4}, {"Body", 0}},
-		help:  helpLine("enter", "message", "[ ]", "older / newer page", "g", "go to seq", "f", "filter subject", "a", "consumer", "d", "delete", "s", "subscribe", "esc", "back"),
+		help:  helpLine("enter", "message", "[ ]", "older / newer page", "g", "go to seq", "f", "filter subject", "a", "consumer", "d", "delete", "s", "subscribe", "r", "reload", "esc", "back"),
 		empty: "no messages here (the stream may be empty, or purged past this point)"}
 	for _, msg := range msgs {
 		hdr := ""
@@ -697,7 +701,7 @@ func subjectsTable(stream, filter string, subs map[string]uint64) *table {
 	}
 	t := &table{kind: tkSubjects, stream: stream, filter: filter, title: "Subjects of stream " + stream, desc: desc,
 		cols:  []tcol{{"Subject", 0}, {"Messages", 12}},
-		help:  helpLine("enter", "messages of the subject", "f", "filter", "a", "consumer", "P", "purge the subject", "s", "subscribe", "esc", "back"),
+		help:  helpLine("enter", "messages of the subject", "f", "filter", "a", "consumer", "P", "purge the subject", "s", "subscribe", "r", "reload", "esc", "back"),
 		empty: "no subjects (the stream holds no messages)"}
 	var rows []subjectRow
 	for s, n := range subs {
@@ -782,7 +786,7 @@ func keysTable(bucket string, keys []cli.KVEntry) *table {
 	t := &table{kind: tkKeys, bucket: bucket, title: "Keys of bucket " + bucket,
 		desc:  "Every key with its latest value; deleted keys are not listed (their history is, under h).",
 		cols:  []tcol{{"Key", 0}, {"Revision", 9}, {"Created", 19}, {"Size", 9}, {"Value", 0}},
-		help:  helpLine("enter", "value", "a", "put", "e", "edit value", "h", "history", "d", "delete", "D", "purge", "w", "watch", "esc", "back"),
+		help:  helpLine("enter", "value", "a", "put", "e", "edit value", "h", "history", "d", "delete", "D", "purge", "w", "watch", "r", "reload", "esc", "back"),
 		empty: "no keys (a puts one)"}
 	for _, e := range keys {
 		t.rows = append(t.rows, trow{cells: []string{e.Key, fmt.Sprint(e.Revision), cli.Date(e.Created), cli.Size(uint64(len(e.Value))), preview(e.Value)}, ref: e})
@@ -918,7 +922,7 @@ func historyTable(bucket, key string, hist []cli.KVEntry) *table {
 	t := &table{kind: tkHistory, bucket: bucket, key: key, title: fmt.Sprintf("History of %s > %s", bucket, key),
 		desc:  "Every revision the bucket still keeps (its history setting says how many), oldest first.",
 		cols:  []tcol{{"Revision", 9}, {"Op", 7}, {"Created", 19}, {"Size", 9}, {"Value", 0}},
-		help:  helpLine("enter", "value", "R", "revert to this revision", "esc", "back to the keys"),
+		help:  helpLine("enter", "value", "R", "revert to this revision", "r", "reload", "esc", "back to the keys"),
 		empty: "no history"}
 	for _, e := range hist {
 		var st *lipgloss.Style
@@ -969,7 +973,7 @@ func (m *Model) objectsTable(b *cli.ObjectBucket) *table {
 	t := &table{kind: tkObjects, bucket: b.Name(), title: "Objects in " + b.Name(),
 		desc:  "The files stored in the bucket (nats object ls); an object is read back with g.",
 		cols:  []tcol{{"Name", 0}, {"Size", 10}, {"Modified", 19}, {"Chunks", 7}, {"Description", 0}, {"Digest", 24}},
-		help:  helpLine("enter", "info", "a", "put a file", "g", "get to a file", "d", "delete", "w", "watch", "esc", "back"),
+		help:  helpLine("enter", "info", "a", "put a file", "g", "get to a file", "d", "delete", "w", "watch", "r", "reload", "esc", "back"),
 		empty: "no objects (a puts a file)"}
 	if b.ListErr != nil {
 		t.empty = "⚠ " + b.ListErr.Error()
