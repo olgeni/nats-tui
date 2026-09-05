@@ -16,7 +16,7 @@ import (
 	"github.com/olgeni/nats-tui/ui"
 )
 
-const version = "1.1.2"
+const version = "1.2.0"
 
 func main() {
 	flag.Usage = func() {
