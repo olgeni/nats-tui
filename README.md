@@ -190,6 +190,11 @@ again, `/` filters by subject or body, `c` clears, `enter` opens an entry,
 `p` publishes to its subject, `esc` stops the subscription. The last 5000
 entries are kept.
 
+Every table screen (contexts, messages, subjects, keys, history, objects)
+reads its rows once, when it is opened, so a bucket whose keys have a TTL
+keeps showing them after they expire. `r` reads the table again and comes
+back to the row you were on.
+
 ![the messages of a stream](doc/messages.png)
 
 ![a live subscription](doc/live.png)

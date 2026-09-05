@@ -276,6 +276,16 @@ Only what changed is passed to
 which prints the difference it applied.
 Settings fixed at creation (a stream's storage, a consumer's mode and
 policies) are left alone and mentioned in a note.
+.Sh TABLES
+The contexts, messages, subjects, keys, history and objects screens read
+their rows once, when they are opened, so a bucket whose keys have a TTL
+goes on showing them after they expire.
+.Ic r
+reads the table again and comes back to the row the cursor was on.
+.Ic esc
+or
+.Ic q
+leaves it.
 .Sh LIVE SCREENS
 New entries are followed unless you scroll back;
 .Ic end
