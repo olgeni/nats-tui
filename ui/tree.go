@@ -249,7 +249,13 @@ func (m *Model) searchable(n node) []string {
 	return nil
 }
 
-func (m *Model) listHeight() int { return max(3, m.height-13) }
+func (m *Model) listHeight() int {
+	h := m.height - 13
+	if m.mn != nil {
+		h -= 2 // the two rows of the control panel
+	}
+	return max(3, h)
+}
 
 func (m *Model) clampCursor() {
 	if m.cursor >= len(m.rows) {
@@ -479,6 +485,9 @@ func (m *Model) updateMain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if m.store == nil {
 		return m.updateEmpty(k)
+	}
+	if m.mn != nil {
+		return m, m.menuKeys(k.String())
 	}
 	n := m.selected()
 	switch k.String() {
@@ -884,6 +893,9 @@ func (m *Model) mainView() string {
 		}
 	}
 	b.WriteString(hdr + "\n")
+	if m.mn != nil {
+		b.WriteString(m.menuView(m.width) + "\n")
+	}
 
 	// columns
 	wName, wType, wMsgs, wSize, wLast := 28, 9, 11, 10, 10
@@ -991,6 +1003,10 @@ func (m *Model) mainView() string {
 		b.WriteString(styleOK.Render(" "+fit(m.status, m.width-2)) + "\n")
 	default:
 		b.WriteString("\n")
+	}
+	if m.mn != nil {
+		b.WriteString(" " + helpLine("←→", "move", "letter", "pick it", "enter/↓", "open", "esc/↑", "back", m.mn.key, "close") + "\n\n")
+		return lipgloss.NewStyle().MaxWidth(m.width).Render(b.String())
 	}
 	if m.width < 120 {
 		b.WriteString(" " + helpLine("↑↓", "select", "→←", "expand", "enter", "details", "e", "edit", "a/A", "add", "d", "delete", "/", "filter", "v", "messages") + "\n")

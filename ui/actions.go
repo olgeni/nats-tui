@@ -1131,113 +1131,128 @@ func (m *Model) runCheck(title string, args ...string) tea.Cmd {
 	})
 }
 
-// monitor is the M menu: the checks of the selected entity first, then the
-// server commands, the reports, the checks that need thresholds, and the
-// account commands any user can run.
+// monitor is the M menu: a control panel over the read-only commands,
+// grouped the way nats groups them. The check of the selected entity is the
+// first item of Check, so it is two keystrokes from the tree.
 func (m *Model) monitor(n node) tea.Cmd {
-	var items []pickItem
+	run := func(v string) func(*Model) tea.Cmd {
+		return func(m *Model) tea.Cmd { return m.monitorRun(n, v) }
+	}
+	checks := []menuItem{}
 	switch n.kind {
 	case kStream:
-		items = append(items, pickItem{"server check stream " + n.stream.Name() + "   — sources, mirror and cluster peers of the stream", "checkstream"})
+		checks = append(checks, menuItem{Name: "This", Desc: "server check stream " + n.stream.Name() + " — sources, mirror and cluster peers of the stream", Run: run("checkstream")})
 	case kConsumer:
-		items = append(items, pickItem{"server check consumer " + n.cons.Name() + "   — pending, waiting and redelivered messages of the consumer", "checkconsumer"})
+		checks = append(checks, menuItem{Name: "This", Desc: "server check consumer " + n.cons.Name() + " — pending, waiting and redelivered messages", Run: run("checkconsumer")})
 	case kKV:
-		items = append(items, pickItem{"server check kv " + n.kv.Name() + "   — the bucket answers and holds values", "checkkv"})
+		checks = append(checks, menuItem{Name: "This", Desc: "server check kv " + n.kv.Name() + " — the bucket answers and holds values", Run: run("checkkv")})
 	}
-	items = append(items,
-		pickItem{"server list          — every server of the cluster (system account)", "list"},
-		pickItem{"server info          — the connected server (system account)", "info"},
-		pickItem{"server ping          — round trips to every server (system account)", "ping"},
-		pickItem{"server report connections   — connections and their traffic (system account)", "connz"},
-		pickItem{"server report jetstream     — JetStream usage per server (system account)", "jsz"},
-		pickItem{"server report accounts      — accounts and their activity (system account)", "accounts"},
-		pickItem{"server report health        — server health (system account)", "health"},
-		pickItem{"server report cpu           — CPU usage per server (system account)", "cpu"},
-		pickItem{"server report mem           — memory usage per server (system account)", "mem"},
-		pickItem{"server report routes        — cluster routes and their traffic (system account)", "routes"},
-		pickItem{"server report gateways      — super-cluster gateways (system account)", "gateways"},
-		pickItem{"server report leafnodes     — leaf node connections (system account)", "leafnodes"},
-		pickItem{"server report downgrade     — assets a lower API level could not load (system account)", "downgrade"},
-		pickItem{"server account info         — one account as the servers see it (system account)", "sysaccount"},
-		pickItem{"server check jetstream      — JetStream account state check", "checkjs"},
-		pickItem{"server check connection     — connection health check", "checkconn"},
-		pickItem{"server check meta           — JetStream cluster state: peers, lag, last seen (system account)", "checkmeta"},
-		pickItem{"server check server         — one server: CPU, memory, connections, uptime (system account)", "checkserver"},
-		pickItem{"server check request        — a request-reply service answers, in time and as expected", "checkrequest"},
-		pickItem{"server check credential     — a credential file is valid and not about to expire", "checkcred"},
-		pickItem{"server mappings      — try a subject mapping on a subject", "mappings"},
-		pickItem{"rtt                  — round-trip times to the server (any user)", "rtt"},
-		pickItem{"account info         — this account's JetStream usage (any user)", "account"},
-		pickItem{"account report connections  — this account's connections", "acctconn"},
-		pickItem{"account tls          — the TLS certificate chain of the connection", "tls"},
+	checks = append(checks,
+		menuItem{Name: "Jetstream", Desc: "server check jetstream — the JetStream account state against its limits", Run: run("checkjs")},
+		menuItem{Name: "Connection", Desc: "server check connection — the round trip, and that the server answers", Run: run("checkconn")},
+		menuItem{Name: "Meta", Desc: "server check meta — the JetStream cluster: peers, lag, last seen (system account)", Run: run("checkmeta")},
+		menuItem{Name: "Server", Key: "v", Desc: "server check server — one server: CPU, memory, connections, uptime (system account)", Run: run("checkserver")},
+		menuItem{Name: "Request", Desc: "server check request — a request-reply service answers, in time and as expected", Run: run("checkrequest")},
+		menuItem{Name: "Credential", Key: "e", Desc: "server check credential — a credential file is valid and not about to expire", Run: run("checkcred")},
 	)
-	return m.openPicker("Monitoring", "The server commands ask the system account for data: use a context whose credentials belong to it.", items, "", func(m *Model, v string) tea.Cmd {
-		switch v {
-		case "checkstream":
-			return m.runCheck("Check of stream "+n.stream.Name(), "server", "check", "stream", "--stream="+n.stream.Name())
-		case "checkconsumer":
-			return m.runCheck("Check of consumer "+n.cons.Name(), "server", "check", "consumer", "--stream="+n.cons.Stream.Name(), "--consumer="+n.cons.Name())
-		case "checkkv":
-			return m.runCheck("Check of bucket "+n.kv.Name(), "server", "check", "kv", "--bucket="+n.kv.Name())
-		case "list":
-			return m.runText("Servers (nats server list)", "server", "list")
-		case "info":
-			return m.runText("Server (nats server info)", "server", "info")
-		case "ping":
-			return m.runText("Ping (nats server ping)", "server", "ping")
-		case "connz":
-			return m.runText("Connections (nats server report connections)", "server", "report", "connections")
-		case "jsz":
-			return m.runText("JetStream (nats server report jetstream)", "server", "report", "jetstream")
-		case "accounts":
-			return m.runText("Accounts (nats server report accounts)", "server", "report", "accounts")
-		case "health":
-			return m.runText("Health (nats server report health)", "server", "report", "health")
-		case "cpu":
-			return m.runText("CPU (nats server report cpu)", "server", "report", "cpu")
-		case "mem":
-			return m.runText("Memory (nats server report mem)", "server", "report", "mem")
-		case "routes":
-			return m.runText("Routes (nats server report routes)", "server", "report", "routes")
-		case "gateways":
-			return m.runText("Gateways (nats server report gateways)", "server", "report", "gateways")
-		case "leafnodes":
-			return m.runText("Leaf nodes (nats server report leafnodes)", "server", "report", "leafnodes")
-		case "downgrade":
-			m.formVals.str = "1"
-			return m.openForm(inputForm("Target API level", "nats server report downgrade lists the streams and consumers a server of this JetStream API level could not load.", "1", &m.formVals.str, validInt("an API level")), func(m *Model) tea.Cmd {
-				return m.runText("Downgrade to API level "+m.formVals.str, "server", "report", "downgrade", m.formVals.str)
-			}, nil)
-		case "sysaccount":
-			m.formVals.str = ""
-			return m.openForm(inputForm("Account", "The name of the account nats server account info describes.", "ACME", &m.formVals.str, nonEmpty("an account name")), func(m *Model) tea.Cmd {
-				return m.runText("Account "+m.formVals.str+" (nats server account info)", "server", "account", "info", strings.TrimSpace(m.formVals.str))
-			}, nil)
-		case "checkjs":
-			return m.runCheck("JetStream check (nats server check jetstream)", "server", "check", "jetstream")
-		case "checkconn":
-			return m.runCheck("Connection check (nats server check connection)", "server", "check", "connection")
-		case "checkmeta":
-			return m.checkMeta()
-		case "checkserver":
-			return m.checkServer()
-		case "checkrequest":
-			return m.checkRequest(defaultSubject(n))
-		case "checkcred":
-			return m.checkCredential()
-		case "mappings":
-			return m.tryMapping()
-		case "rtt":
-			return m.runText("Round-trip times (nats rtt)", "rtt")
-		case "account":
-			return m.accountInfo()
-		case "acctconn":
-			return m.runText("Connections (nats account report connections)", "account", "report", "connections")
-		case "tls":
-			return m.runText("TLS (nats account tls)", "account", "tls")
-		}
-		return nil
-	}, nil)
+	items := []menuItem{
+		{Name: "Report", Items: []menuItem{
+			{Name: "Connections", Desc: "server report connections — connections and their traffic (system account)", Run: run("connz")},
+			{Name: "Jetstream", Desc: "server report jetstream — JetStream usage per server (system account)", Run: run("jsz")},
+			{Name: "Accounts", Desc: "server report accounts — accounts and their activity (system account)", Run: run("accounts")},
+			{Name: "Health", Desc: "server report health — server health (system account)", Run: run("health")},
+			{Name: "Cpu", Key: "p", Desc: "server report cpu — CPU usage per server (system account)", Run: run("cpu")},
+			{Name: "Mem", Desc: "server report mem — memory usage per server (system account)", Run: run("mem")},
+			{Name: "Routes", Desc: "server report routes — cluster routes and their traffic (system account)", Run: run("routes")},
+			{Name: "Gateways", Desc: "server report gateways — super-cluster gateways (system account)", Run: run("gateways")},
+			{Name: "Leafnodes", Desc: "server report leafnodes — leaf node connections (system account)", Run: run("leafnodes")},
+			{Name: "Downgrade", Desc: "server report downgrade — assets a lower API level could not load (system account)", Run: run("downgrade")},
+		}},
+		{Name: "Check", Items: checks},
+		{Name: "Server", Items: []menuItem{
+			{Name: "List", Desc: "server list — every server of the cluster (system account)", Run: run("list")},
+			{Name: "Info", Desc: "server info — the connected server (system account)", Run: run("info")},
+			{Name: "Ping", Desc: "server ping — round trips to every server (system account)", Run: run("ping")},
+			{Name: "Mappings", Desc: "server mappings — try a subject mapping on a subject", Run: run("mappings")},
+			{Name: "Account", Desc: "server account info — one account as the servers see it (system account)", Run: run("sysaccount")},
+		}},
+		{Name: "Account", Items: []menuItem{
+			{Name: "Info", Desc: "account info — this account's JetStream usage (any user)", Run: run("account")},
+			{Name: "Connections", Desc: "account report connections — this account's connections", Run: run("acctconn")},
+			{Name: "Tls", Desc: "account tls — the TLS certificate chain of the connection", Run: run("tls")},
+		}},
+		{Name: "Rtt", Key: "t", Desc: "rtt — round-trip times to the server (any user)", Run: run("rtt")},
+	}
+	return m.openMenu("M", "Monitor", items)
+}
+
+// monitorRun runs one leaf of the M menu.
+func (m *Model) monitorRun(n node, v string) tea.Cmd {
+	switch v {
+	case "checkstream":
+		return m.runCheck("Check of stream "+n.stream.Name(), "server", "check", "stream", "--stream="+n.stream.Name())
+	case "checkconsumer":
+		return m.runCheck("Check of consumer "+n.cons.Name(), "server", "check", "consumer", "--stream="+n.cons.Stream.Name(), "--consumer="+n.cons.Name())
+	case "checkkv":
+		return m.runCheck("Check of bucket "+n.kv.Name(), "server", "check", "kv", "--bucket="+n.kv.Name())
+	case "list":
+		return m.runText("Servers (nats server list)", "server", "list")
+	case "info":
+		return m.runText("Server (nats server info)", "server", "info")
+	case "ping":
+		return m.runText("Ping (nats server ping)", "server", "ping")
+	case "connz":
+		return m.runText("Connections (nats server report connections)", "server", "report", "connections")
+	case "jsz":
+		return m.runText("JetStream (nats server report jetstream)", "server", "report", "jetstream")
+	case "accounts":
+		return m.runText("Accounts (nats server report accounts)", "server", "report", "accounts")
+	case "health":
+		return m.runText("Health (nats server report health)", "server", "report", "health")
+	case "cpu":
+		return m.runText("CPU (nats server report cpu)", "server", "report", "cpu")
+	case "mem":
+		return m.runText("Memory (nats server report mem)", "server", "report", "mem")
+	case "routes":
+		return m.runText("Routes (nats server report routes)", "server", "report", "routes")
+	case "gateways":
+		return m.runText("Gateways (nats server report gateways)", "server", "report", "gateways")
+	case "leafnodes":
+		return m.runText("Leaf nodes (nats server report leafnodes)", "server", "report", "leafnodes")
+	case "downgrade":
+		m.formVals.str = "1"
+		return m.openForm(inputForm("Target API level", "nats server report downgrade lists the streams and consumers a server of this JetStream API level could not load.", "1", &m.formVals.str, validInt("an API level")), func(m *Model) tea.Cmd {
+			return m.runText("Downgrade to API level "+m.formVals.str, "server", "report", "downgrade", m.formVals.str)
+		}, nil)
+	case "sysaccount":
+		m.formVals.str = ""
+		return m.openForm(inputForm("Account", "The name of the account nats server account info describes.", "ACME", &m.formVals.str, nonEmpty("an account name")), func(m *Model) tea.Cmd {
+			return m.runText("Account "+m.formVals.str+" (nats server account info)", "server", "account", "info", strings.TrimSpace(m.formVals.str))
+		}, nil)
+	case "checkjs":
+		return m.runCheck("JetStream check (nats server check jetstream)", "server", "check", "jetstream")
+	case "checkconn":
+		return m.runCheck("Connection check (nats server check connection)", "server", "check", "connection")
+	case "checkmeta":
+		return m.checkMeta()
+	case "checkserver":
+		return m.checkServer()
+	case "checkrequest":
+		return m.checkRequest(defaultSubject(n))
+	case "checkcred":
+		return m.checkCredential()
+	case "mappings":
+		return m.tryMapping()
+	case "rtt":
+		return m.runText("Round-trip times (nats rtt)", "rtt")
+	case "account":
+		return m.accountInfo()
+	case "acctconn":
+		return m.runText("Connections (nats account report connections)", "account", "report", "connections")
+	case "tls":
+		return m.runText("TLS (nats account tls)", "account", "tls")
+	}
+	return nil
 }
 
 func validInt(what string) func(string) error {
@@ -1364,61 +1379,72 @@ func (m *Model) tryMapping() tea.Cmd {
 }
 
 func (m *Model) reports(n node) tea.Cmd {
-	items := []pickItem{
-		{"stream report        — every stream with its storage, messages and replicas", "streams"},
-		{"consumer report      — the consumers of a stream with their state", "consumers"},
-		{"account report statistics   — server statistics for this account", "stats"},
-		{"stream find          — streams matching criteria (empty, idle, mirrored…)", "find"},
-		{"consumer find        — consumers of a stream matching criteria (pull, idle, pending…)", "findconsumer"},
-		{"stream gaps          — gaps in a stream's sequence that would show as deleted messages", "gaps"},
+	run := func(v string) func(*Model) tea.Cmd {
+		return func(m *Model) tea.Cmd { return m.reportsRun(n, v) }
+	}
+	items := []menuItem{
+		{Name: "Streams", Desc: "stream report — every stream with its storage, messages and replicas", Run: run("streams")},
+		{Name: "Consumers", Desc: "consumer report — the consumers of a stream with their state", Run: run("consumers")},
+		{Name: "Account", Desc: "account report statistics — server statistics for this account", Run: run("stats")},
+		{Name: "Find", Items: []menuItem{
+			{Name: "Streams", Desc: "stream find — streams matching criteria (empty, idle, mirrored…)", Run: run("find")},
+			{Name: "Consumers", Desc: "consumer find — consumers of a stream matching criteria (pull, idle, pending…)", Run: run("findconsumer")},
+		}},
+		{Name: "Gaps", Desc: "stream gaps — gaps in a stream's sequence that would show as deleted messages", Run: run("gaps")},
 	}
 	if n.kind == kService {
-		items = append(items, pickItem{"service info " + n.svc.Info.Name + "   — endpoints of the service", "svcinfo"}, pickItem{"service stats " + n.svc.Info.Name + "  — request counts and timings", "svcstats"})
+		items = append(items, menuItem{Name: "Service", Key: "v", Items: []menuItem{
+			{Name: "Info", Desc: "service info " + n.svc.Info.Name + " — endpoints of the service", Run: run("svcinfo")},
+			{Name: "Stats", Desc: "service stats " + n.svc.Info.Name + " — request counts and timings", Run: run("svcstats")},
+		}})
 	}
-	return m.openPicker("Reports", "", items, "", func(m *Model, v string) tea.Cmd {
-		switch v {
-		case "streams":
-			return m.runText("Stream report (nats stream report)", "stream", "report", "-a")
-		case "consumers":
-			if st := n.streamOf(); st != nil {
-				return m.runText("Consumer report of "+st.Name(), "consumer", "report", st.Name())
-			}
-			return m.pickStream("Consumer report of which stream?", func(m *Model, st *cli.Stream) tea.Cmd {
-				return m.runText("Consumer report of "+st.Name(), "consumer", "report", st.Name())
-			})
-		case "stats":
-			return m.runText("Statistics (nats account report statistics)", "account", "report", "statistics")
-		case "find":
-			m.formVals.str = "--empty"
-			return m.openForm(inputForm("nats stream find", "Flags of nats stream find: --empty, --idle 1h, --created 7d, --mirrored, --sourced, --subject x.>, --expression '…'", "--empty", &m.formVals.str, nil), func(m *Model) tea.Cmd {
-				return m.runText("nats stream find "+m.formVals.str, append([]string{"stream", "find"}, strings.Fields(m.formVals.str)...)...)
-			}, nil)
-		case "findconsumer":
-			find := func(m *Model, st *cli.Stream) tea.Cmd {
-				m.formVals.str = "--pull"
-				return m.openForm(inputForm("nats consumer find "+st.Name(), "Flags of nats consumer find: --pull, --push, --bound, --idle 1h, --created 7d, --pending 100, --ack-pending 10, --waiting 5, --replicas 1, --pinned, --invert, --expression '…'", "--pull", &m.formVals.str, nil), func(m *Model) tea.Cmd {
-					return m.runText("nats consumer find "+st.Name()+" "+m.formVals.str, append([]string{"consumer", "find", st.Name()}, strings.Fields(m.formVals.str)...)...)
-				}, nil)
-			}
-			if st := n.streamOf(); st != nil {
-				return find(m, st)
-			}
-			return m.pickStream("Find consumers of which stream?", find)
-		case "gaps":
-			gaps := func(m *Model, st *cli.Stream) tea.Cmd {
-				return m.runText("Gaps of "+st.Name()+" (nats stream gaps)", "stream", "gaps", st.Name(), "-f", "--no-progress")
-			}
-			if st := n.streamOf(); st != nil {
-				return gaps(m, st)
-			}
-			return m.pickStream("Gaps of which stream?", gaps)
-		case "svcinfo":
-			return m.runText("Service "+n.svc.Info.Name, "service", "info", n.svc.Info.Name, n.svc.Info.ID)
-		case "svcstats":
-			return m.runText("Statistics of "+n.svc.Info.Name, "service", "stats", n.svc.Info.Name, n.svc.Info.ID)
+	return m.openMenu("T", "Reports", items)
+}
+
+// reportsRun runs one leaf of the T menu.
+func (m *Model) reportsRun(n node, v string) tea.Cmd {
+	switch v {
+	case "streams":
+		return m.runText("Stream report (nats stream report)", "stream", "report", "-a")
+	case "consumers":
+		if st := n.streamOf(); st != nil {
+			return m.runText("Consumer report of "+st.Name(), "consumer", "report", st.Name())
 		}
-		return nil
-	}, nil)
+		return m.pickStream("Consumer report of which stream?", func(m *Model, st *cli.Stream) tea.Cmd {
+			return m.runText("Consumer report of "+st.Name(), "consumer", "report", st.Name())
+		})
+	case "stats":
+		return m.runText("Statistics (nats account report statistics)", "account", "report", "statistics")
+	case "find":
+		m.formVals.str = "--empty"
+		return m.openForm(inputForm("nats stream find", "Flags of nats stream find: --empty, --idle 1h, --created 7d, --mirrored, --sourced, --subject x.>, --expression '…'", "--empty", &m.formVals.str, nil), func(m *Model) tea.Cmd {
+			return m.runText("nats stream find "+m.formVals.str, append([]string{"stream", "find"}, strings.Fields(m.formVals.str)...)...)
+		}, nil)
+	case "findconsumer":
+		find := func(m *Model, st *cli.Stream) tea.Cmd {
+			m.formVals.str = "--pull"
+			return m.openForm(inputForm("nats consumer find "+st.Name(), "Flags of nats consumer find: --pull, --push, --bound, --idle 1h, --created 7d, --pending 100, --ack-pending 10, --waiting 5, --replicas 1, --pinned, --invert, --expression '…'", "--pull", &m.formVals.str, nil), func(m *Model) tea.Cmd {
+				return m.runText("nats consumer find "+st.Name()+" "+m.formVals.str, append([]string{"consumer", "find", st.Name()}, strings.Fields(m.formVals.str)...)...)
+			}, nil)
+		}
+		if st := n.streamOf(); st != nil {
+			return find(m, st)
+		}
+		return m.pickStream("Find consumers of which stream?", find)
+	case "gaps":
+		gaps := func(m *Model, st *cli.Stream) tea.Cmd {
+			return m.runText("Gaps of "+st.Name()+" (nats stream gaps)", "stream", "gaps", st.Name(), "-f", "--no-progress")
+		}
+		if st := n.streamOf(); st != nil {
+			return gaps(m, st)
+		}
+		return m.pickStream("Gaps of which stream?", gaps)
+	case "svcinfo":
+		return m.runText("Service "+n.svc.Info.Name, "service", "info", n.svc.Info.Name, n.svc.Info.ID)
+	case "svcstats":
+		return m.runText("Statistics of "+n.svc.Info.Name, "service", "stats", n.svc.Info.Name, n.svc.Info.ID)
+	}
+	return nil
 }
 
 // ---------------------------------------------------------------- cluster administration
@@ -1427,103 +1453,113 @@ func (m *Model) reports(n node) tea.Cmd {
 // ones for the selected stream or consumer first. They change the cluster
 // rather than an entity, so each one is a plan like any other.
 func (m *Model) cluster(n node) tea.Cmd {
-	var items []pickItem
+	run := func(v string) func(*Model) tea.Cmd {
+		return func(m *Model) tea.Cmd { return m.clusterRun(n, v) }
+	}
+	var items []menuItem
 	switch n.kind {
 	case kStream:
 		items = append(items,
-			pickItem{"stream cluster step-down " + n.stream.Name() + "   — elect a new leader for the stream", "streamdown"},
-			pickItem{"stream cluster peer-remove " + n.stream.Name() + " — move the stream away from one of its servers", "streampeer"},
+			menuItem{Name: "Stepdown", Desc: "stream cluster step-down " + n.stream.Name() + " — elect a new leader for the stream", Run: run("streamdown")},
+			menuItem{Name: "Peer", Desc: "stream cluster peer-remove " + n.stream.Name() + " — move the stream away from one of its servers", Run: run("streampeer")},
 		)
 	case kConsumer:
 		items = append(items,
-			pickItem{"consumer cluster step-down " + n.cons.Name() + "   — elect a new leader for the consumer", "consumerdown"},
-			pickItem{"consumer reset " + n.cons.Name() + "   — deliver again from a sequence, or the outstanding messages", "reset"},
-			pickItem{"consumer unpin " + n.cons.Name() + "   — release the client pinned to a priority group", "unpin"},
+			menuItem{Name: "Stepdown", Desc: "consumer cluster step-down " + n.cons.Name() + " — elect a new leader for the consumer", Run: run("consumerdown")},
+			menuItem{Name: "Reset", Desc: "consumer reset " + n.cons.Name() + " — deliver again from a sequence, or the outstanding messages", Run: run("reset")},
+			menuItem{Name: "Unpin", Desc: "consumer unpin " + n.cons.Name() + " — release the client pinned to a priority group", Run: run("unpin")},
 		)
 	}
 	items = append(items,
-		pickItem{"stream cluster balance      — spread the stream leaders over the servers", "balancestreams"},
-		pickItem{"consumer cluster balance    — spread the consumer leaders of a stream", "balanceconsumers"},
-		pickItem{"server cluster step-down    — elect a new JetStream meta leader (system account)", "metadown"},
-		pickItem{"server cluster peer-remove  — remove a server from the JetStream cluster (system account)", "serverpeer"},
-		pickItem{"server config reload        — make a server re-read its configuration (system account)", "reload"},
-		pickItem{"server request kick         — disconnect a client (system account)", "kick"},
-		pickItem{"server account purge        — delete every JetStream asset of an account (system account)", "purge"},
+		menuItem{Name: "Balance", Items: []menuItem{
+			{Name: "Streams", Desc: "stream cluster balance — spread the stream leaders over the servers", Run: run("balancestreams")},
+			{Name: "Consumers", Desc: "consumer cluster balance — spread the consumer leaders of a stream", Run: run("balanceconsumers")},
+		}},
+		menuItem{Name: "Meta", Items: []menuItem{
+			{Name: "Stepdown", Desc: "server cluster step-down — elect a new JetStream meta leader (system account)", Run: run("metadown")},
+			{Name: "Peer", Desc: "server cluster peer-remove — remove a server from the JetStream cluster (system account)", Run: run("serverpeer")},
+		}},
+		menuItem{Name: "Reload", Key: "l", Desc: "server config reload — make a server re-read its configuration (system account)", Run: run("reload")},
+		menuItem{Name: "Kick", Desc: "server request kick — disconnect a client (system account)", Run: run("kick")},
+		menuItem{Name: "Purge", Key: "g", Desc: "server account purge — delete every JetStream asset of an account (system account)", Run: run("purge")},
 	)
-	return m.openPicker("Cluster", "Leader elections, peer removals and the server commands; the latter need a system account context.", items, "", func(m *Model, v string) tea.Cmd {
-		switch v {
-		case "streamdown":
-			return m.askPreferred("Step down the leader of "+n.stream.Name(), func(m *Model, host string) tea.Cmd {
-				return m.runPlan(cli.StepDownStream(n.stream.Name(), host), nil)
-			})
-		case "streampeer":
-			return m.askString("Peer to remove from "+n.stream.Name(), "The server name of the peer; the stream is placed on another server.", "", nonEmpty("a server name"), func(m *Model, peer string) tea.Cmd {
-				return m.runPlan(cli.RemoveStreamPeer(n.stream.Name(), peer), nil)
-			})
-		case "consumerdown":
-			return m.askPreferred("Step down the leader of "+n.cons.Name(), func(m *Model, host string) tea.Cmd {
-				return m.runPlan(cli.StepDownConsumer(n.cons.Stream.Name(), n.cons.Name(), host), nil)
-			})
-		case "reset":
-			return m.askString("Reset "+n.cons.Name()+" to stream sequence", fmt.Sprintf("Delivery starts again from this sequence; blank keeps the position and delivers the outstanding messages again. Last delivered: %d, acknowledged up to: %d.", n.cons.Info.Delivered.Stream, n.cons.Info.AckFloor.Stream), "", optional(validInt("a sequence")), func(m *Model, seq string) tea.Cmd {
-				var v uint64
-				if seq != "" {
-					v, _ = strconv.ParseUint(seq, 10, 64)
-				}
-				return m.runPlan(cli.ResetConsumer(n.cons.Stream.Name(), n.cons.Name(), v), nil)
-			})
-		case "unpin":
-			return m.askString("Priority group to unpin on "+n.cons.Name(), "The pinned client of the group is released and another one takes its place.", "", nonEmpty("a group name"), func(m *Model, group string) tea.Cmd {
-				return m.runPlan(cli.UnpinConsumer(n.cons.Stream.Name(), n.cons.Name(), group), nil)
-			})
-		case "balancestreams":
-			return m.askString("nats stream cluster balance", "Flags selecting the streams: --server-name x, --cluster x, --empty, --idle 1h, --created 7d, --consumers 5, --subject x.>, --replicas 3, --sourced, --mirrored, --leader x, --invert, --expression '…'; blank balances every stream.", "", nil, func(m *Model, flags string) tea.Cmd {
-				return m.runPlan(cli.BalanceStreams(strings.Fields(flags)), nil)
-			})
-		case "balanceconsumers":
-			balance := func(m *Model, st *cli.Stream) tea.Cmd {
-				return m.askString("nats consumer cluster balance "+st.Name(), "Flags selecting the consumers: --pull, --push, --bound, --waiting 5, --ack-pending 10, --pending 100, --idle 1h, --created 7d, --replicas 3, --leader x, --pinned, --invert; blank balances every consumer.", "", nil, func(m *Model, flags string) tea.Cmd {
-					return m.runPlan(cli.BalanceConsumers(st.Name(), strings.Fields(flags)), nil)
-				})
+	return m.openMenu("L", "Cluster", items)
+}
+
+// clusterRun runs one leaf of the L menu.
+func (m *Model) clusterRun(n node, v string) tea.Cmd {
+	switch v {
+	case "streamdown":
+		return m.askPreferred("Step down the leader of "+n.stream.Name(), func(m *Model, host string) tea.Cmd {
+			return m.runPlan(cli.StepDownStream(n.stream.Name(), host), nil)
+		})
+	case "streampeer":
+		return m.askString("Peer to remove from "+n.stream.Name(), "The server name of the peer; the stream is placed on another server.", "", nonEmpty("a server name"), func(m *Model, peer string) tea.Cmd {
+			return m.runPlan(cli.RemoveStreamPeer(n.stream.Name(), peer), nil)
+		})
+	case "consumerdown":
+		return m.askPreferred("Step down the leader of "+n.cons.Name(), func(m *Model, host string) tea.Cmd {
+			return m.runPlan(cli.StepDownConsumer(n.cons.Stream.Name(), n.cons.Name(), host), nil)
+		})
+	case "reset":
+		return m.askString("Reset "+n.cons.Name()+" to stream sequence", fmt.Sprintf("Delivery starts again from this sequence; blank keeps the position and delivers the outstanding messages again. Last delivered: %d, acknowledged up to: %d.", n.cons.Info.Delivered.Stream, n.cons.Info.AckFloor.Stream), "", optional(validInt("a sequence")), func(m *Model, seq string) tea.Cmd {
+			var v uint64
+			if seq != "" {
+				v, _ = strconv.ParseUint(seq, 10, 64)
 			}
-			if st := n.streamOf(); st != nil {
-				return balance(m, st)
-			}
-			return m.pickStream("Balance the consumers of which stream?", balance)
-		case "metadown":
-			fields := []*field{
-				section("Where the new meta leader should be"),
-				textField("cluster", "Cluster", "", "", "(any)", nil),
-				textField("host", "Host", "", "a server name", "(any)", nil),
-				listField("tags", "Tags", nil, "servers holding these tags"),
-			}
-			return m.openEditor(newEditor("Step down the JetStream meta leader", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
-				return m.runPlan(cli.StepDownMeta(ed.str("cluster"), ed.str("host"), ed.list("tags")), nil)
-			})
-		case "serverpeer":
-			return m.askString("Server to remove from the JetStream cluster", "Its name or ID; every stream and consumer it holds is moved to the remaining servers.", "", nonEmpty("a server name"), func(m *Model, name string) tea.Cmd {
-				return m.runPlan(cli.RemoveServerPeer(name), nil)
-			})
-		case "reload":
-			return m.askString("Server to reload", "The ID of the server that re-reads its configuration file.", m.serverID(), nonEmpty("a server ID"), func(m *Model, id string) tea.Cmd {
-				return m.runPlan(cli.ReloadConfig(id), nil)
-			})
-		case "kick":
-			fields := []*field{
-				section("Disconnect a client"),
-				textField("client", "Client ID", "", "the CID nats server report connections shows", "required", validInt("a client ID")),
-				textField("server", "Server ID", m.serverID(), "the server the client is connected to", "required", nonEmpty("a server ID")),
-			}
-			return m.openEditor(newEditor("Kick a client", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
-				return m.runPlan(cli.KickClient(ed.str("client"), ed.str("server")), nil)
-			})
-		case "purge":
-			return m.askString("Account to purge", "Every stream and consumer of the account is deleted from the cluster.", "", nonEmpty("an account name"), func(m *Model, name string) tea.Cmd {
-				return m.runPlan(cli.PurgeAccount(name), nil)
+			return m.runPlan(cli.ResetConsumer(n.cons.Stream.Name(), n.cons.Name(), v), nil)
+		})
+	case "unpin":
+		return m.askString("Priority group to unpin on "+n.cons.Name(), "The pinned client of the group is released and another one takes its place.", "", nonEmpty("a group name"), func(m *Model, group string) tea.Cmd {
+			return m.runPlan(cli.UnpinConsumer(n.cons.Stream.Name(), n.cons.Name(), group), nil)
+		})
+	case "balancestreams":
+		return m.askString("nats stream cluster balance", "Flags selecting the streams: --server-name x, --cluster x, --empty, --idle 1h, --created 7d, --consumers 5, --subject x.>, --replicas 3, --sourced, --mirrored, --leader x, --invert, --expression '…'; blank balances every stream.", "", nil, func(m *Model, flags string) tea.Cmd {
+			return m.runPlan(cli.BalanceStreams(strings.Fields(flags)), nil)
+		})
+	case "balanceconsumers":
+		balance := func(m *Model, st *cli.Stream) tea.Cmd {
+			return m.askString("nats consumer cluster balance "+st.Name(), "Flags selecting the consumers: --pull, --push, --bound, --waiting 5, --ack-pending 10, --pending 100, --idle 1h, --created 7d, --replicas 3, --leader x, --pinned, --invert; blank balances every consumer.", "", nil, func(m *Model, flags string) tea.Cmd {
+				return m.runPlan(cli.BalanceConsumers(st.Name(), strings.Fields(flags)), nil)
 			})
 		}
-		return nil
-	}, nil)
+		if st := n.streamOf(); st != nil {
+			return balance(m, st)
+		}
+		return m.pickStream("Balance the consumers of which stream?", balance)
+	case "metadown":
+		fields := []*field{
+			section("Where the new meta leader should be"),
+			textField("cluster", "Cluster", "", "", "(any)", nil),
+			textField("host", "Host", "", "a server name", "(any)", nil),
+			listField("tags", "Tags", nil, "servers holding these tags"),
+		}
+		return m.openEditor(newEditor("Step down the JetStream meta leader", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+			return m.runPlan(cli.StepDownMeta(ed.str("cluster"), ed.str("host"), ed.list("tags")), nil)
+		})
+	case "serverpeer":
+		return m.askString("Server to remove from the JetStream cluster", "Its name or ID; every stream and consumer it holds is moved to the remaining servers.", "", nonEmpty("a server name"), func(m *Model, name string) tea.Cmd {
+			return m.runPlan(cli.RemoveServerPeer(name), nil)
+		})
+	case "reload":
+		return m.askString("Server to reload", "The ID of the server that re-reads its configuration file.", m.serverID(), nonEmpty("a server ID"), func(m *Model, id string) tea.Cmd {
+			return m.runPlan(cli.ReloadConfig(id), nil)
+		})
+	case "kick":
+		fields := []*field{
+			section("Disconnect a client"),
+			textField("client", "Client ID", "", "the CID nats server report connections shows", "required", validInt("a client ID")),
+			textField("server", "Server ID", m.serverID(), "the server the client is connected to", "required", nonEmpty("a server ID")),
+		}
+		return m.openEditor(newEditor("Kick a client", fields, m.width, m.height), func(m *Model, ed *editor) tea.Cmd {
+			return m.runPlan(cli.KickClient(ed.str("client"), ed.str("server")), nil)
+		})
+	case "purge":
+		return m.askString("Account to purge", "Every stream and consumer of the account is deleted from the cluster.", "", nonEmpty("an account name"), func(m *Model, name string) tea.Cmd {
+			return m.runPlan(cli.PurgeAccount(name), nil)
+		})
+	}
+	return nil
 }
 
 // serverID is the ID of the connected server, the default for the

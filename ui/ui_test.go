@@ -755,9 +755,9 @@ func TestMonitoringChecksAndReports(t *testing.T) {
 	if m.selected().kind != kStream {
 		t.Fatalf("not on the stream: %v", m.selected().kind)
 	}
-	// the check of the selected stream comes first in the menu
-	press(m, "M")
-	if m.scr != scrPicker || !strings.Contains(m.View(), "server check stream ORDERS") {
+	// the check of the selected stream is the first item of Check
+	press(m, "M", "c")
+	if m.mn == nil || !strings.Contains(m.View(), "server check stream ORDERS") {
 		t.Fatalf("monitor menu:\n%s", m.View())
 	}
 	runCmd(t, m, press(m, "enter"))
@@ -770,7 +770,7 @@ func TestMonitoringChecksAndReports(t *testing.T) {
 	if m.selected().kind != kConsumer {
 		t.Fatalf("not on the consumer: %v", m.selected().kind)
 	}
-	press(m, "M")
+	press(m, "M", "c")
 	if !strings.Contains(m.View(), "server check consumer worker") {
 		t.Fatalf("monitor menu on a consumer:\n%s", m.View())
 	}
@@ -780,11 +780,7 @@ func TestMonitoringChecksAndReports(t *testing.T) {
 	}
 	press(m, "esc")
 	// a mapping is tried through an editor
-	press(m, "M")
-	for _, r := range "mappings" {
-		press(m, string(r))
-	}
-	press(m, "enter")
+	press(m, "M", "s", "m")
 	if m.scr != scrEditor {
 		t.Fatalf("mapping editor: %v", m.scr)
 	}
@@ -794,21 +790,13 @@ func TestMonitoringChecksAndReports(t *testing.T) {
 	}
 	press(m, "esc")
 	// gaps of the stream the consumer belongs to
-	press(m, "T")
-	for _, r := range "gaps" {
-		press(m, string(r))
-	}
-	runCmd(t, m, press(m, "enter"))
+	runCmd(t, m, press(m, "T", "g"))
 	if m.scr != scrText || !strings.Contains(m.View(), "No deleted messages in ORDERS") {
 		t.Fatalf("gaps: %v %s\n%s", m.scr, m.errMsg, m.View())
 	}
 	press(m, "esc")
 	// consumer find with its default flag
-	press(m, "T")
-	for _, r := range "consumer find" {
-		press(m, string(r))
-	}
-	press(m, "enter")
+	press(m, "T", "f", "c")
 	if m.scr != scrForm {
 		t.Fatalf("consumer find form: %v", m.scr)
 	}
@@ -853,11 +841,12 @@ func TestClusterMenuResetsConsumer(t *testing.T) {
 		t.Fatalf("not on the consumer: %v", m.selected().kind)
 	}
 	press(m, "L")
-	if m.scr != scrPicker || !strings.Contains(m.View(), "consumer reset worker") {
+	if m.mn == nil {
 		t.Fatalf("cluster menu:\n%s", m.View())
 	}
-	for _, r := range "reset" {
-		press(m, string(r))
+	press(m, "right") // Stepdown, then Reset
+	if !strings.Contains(m.View(), "consumer reset worker") {
+		t.Fatalf("cluster menu:\n%s", m.View())
 	}
 	press(m, "enter")
 	if m.scr != scrForm {
@@ -874,11 +863,7 @@ func TestClusterMenuResetsConsumer(t *testing.T) {
 		t.Errorf("after reset: %v %s", m.scr, m.errMsg)
 	}
 	// the server commands are offered on any row, with the server ID filled in
-	press(m, "L")
-	for _, r := range "kick" {
-		press(m, string(r))
-	}
-	press(m, "enter")
+	press(m, "L", "k")
 	if m.scr != scrEditor || m.editor.get("server").text != m.store.Server.ID {
 		t.Fatalf("kick editor: %v %q", m.scr, m.editor.get("server").text)
 	}

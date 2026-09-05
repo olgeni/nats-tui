@@ -36,16 +36,11 @@ Main screen
   w              watch a bucket or an object store live
   E              events: JetStream advisories and metrics, server events
   I              account information (JetStream usage and limits)
-  M              monitoring: server list, info, ping, the server reports,
-                 the checks (of the selected stream, consumer or bucket,
-                 and of the cluster, a server, a request, a credential),
-                 subject mappings, rtt, account info and tls (the server
-                 commands need a system account context)
-  T              reports: stream report, consumer report, account report,
-                 stream find, consumer find, stream gaps
-  L              cluster: leader step-down of a stream, a consumer or the
-                 meta group, peer removal, leader balancing, consumer reset
-                 and unpin, config reload, kick a client, purge an account
+  M T L          the menus (see "Menus" below): monitoring, reports and the
+                 cluster commands. Each opens a two-row control panel over
+                 the tree; ←→ move, the highlighted letter of an item picks
+                 it outright, enter or ↓ opens a group, esc or ↑ goes back
+                 one level, and the key that opened the menu closes it
   C              contexts: list, use, select, add, edit, copy, delete, validate
   S              use another context (commands then carry --context)
   b / B          backup a stream (or, elsewhere, every stream of the
@@ -120,27 +115,40 @@ Contexts
   uses one, S makes it the default, e edits it (nats context add on an
   existing name keeps what is not given), V validates one by connecting.
 
-Monitoring
-  M runs the server commands (nats server list, info, ping, the reports:
-  connections, jetstream, accounts, health, cpu, mem, routes, gateways,
-  leafnodes, downgrade) and shows their output. They need the system
-  account: a context whose credentials belong to it. The menu opens with
-  nats server check of the selected stream, consumer or bucket, and offers
-  the other checks (jetstream, connection, meta, server, request,
-  credential) behind a small editor for their thresholds; a check that
-  warns or fails exits non-zero, and its report is shown all the same.
-  rtt, account info and account tls work with any user. T runs the stream,
-  consumer and account reports, stream find, consumer find and stream gaps.
+Menus
+  M, T and L open a menu in the manner of the Lotus 1-2-3 control panel:
+  two rows above the tree, the first holding the items of the level you
+  are in and the second the items of whichever one is highlighted, so the
+  level below is read before it is entered. ←→ move along a level, the
+  letter picked out in each word chooses that item at once, enter or ↓
+  opens a group or runs a command, esc or ↑ leaves one level and closes
+  the menu at the top, and the key that opened it closes it from anywhere.
+  M T is therefore rtt and M S L is nats server list, typed as fast as the
+  fingers go. Nothing else reaches the tree while a menu is up.
 
-Cluster
-  L holds the commands that change the cluster rather than an entity, the
-  ones for the selected stream or consumer first: stream and consumer
-  cluster step-down and peer-remove, consumer reset (delivery starts again
-  from a sequence, or the outstanding messages are delivered again) and
-  unpin, stream and consumer cluster balance, server cluster step-down and
-  peer-remove, server config reload, server request kick and server
-  account purge. Each one is a plan, previewed and confirmed like the
-  others; the destructive ones are flagged.
+  M (Monitor) is Report (connections, jetstream, accounts, health, cpu,
+  mem, routes, gateways, leafnodes, downgrade), Check, Server (list, info,
+  ping, mappings, account info), Account (info, connections, tls) and Rtt.
+  The server commands need the system account: a context whose credentials
+  belong to it; rtt and the account commands work with any user. Check
+  begins with This, the nats server check of the selected stream, consumer
+  or bucket, and continues with jetstream, connection, meta, server,
+  request and credential, the last few behind a small editor for their
+  thresholds; a check that warns or fails exits non-zero, and its report is
+  shown all the same.
+
+  T (Reports) is Streams, Consumers and Account (the stream, consumer and
+  account reports), Find (stream find, consumer find), Gaps, and on a
+  service row Service (info, stats).
+
+  L (Cluster) holds the commands that change the cluster rather than an
+  entity, the ones for the selected stream or consumer first: Stepdown and
+  Peer for a stream, Stepdown, Reset (delivery starts again from a
+  sequence, or the outstanding messages are delivered again) and Unpin for
+  a consumer, then Balance (streams, consumers), Meta (the JetStream meta
+  group: stepdown, peer), Reload, Kick and Purge. Each one is a plan,
+  previewed and confirmed like the others; the destructive ones are
+  flagged.
 
 Connection flags
   nats-tui takes nats's own -context, -s, --creds and --timeout and passes
@@ -176,9 +184,9 @@ var keymapSections = []struct {
 		{"w", "watch bucket live"},
 		{"E", "events live"},
 		{"I", "account info"},
-		{"M", "monitoring / checks"},
-		{"T", "reports"},
-		{"L", "cluster"},
+		{"M", "monitor menu"},
+		{"T", "reports menu"},
+		{"L", "cluster menu"},
 		{"C / S", "contexts / switch"},
 		{"b / B", "backup / restore"},
 		{"y", "copy stream / consumer"},
@@ -190,6 +198,13 @@ var keymapSections = []struct {
 		{"h / ?", "keys / help"},
 		{"ctrl+z", "suspend"},
 		{"q / esc / ctrl+c", "quit"},
+	}},
+	{"Menus (M T L)", []keyDesc{
+		{"←/→ tab", "move along the level"},
+		{"letter", "pick that item at once"},
+		{"enter / ↓", "open a group, run a command"},
+		{"esc / ↑", "back one level"},
+		{"M T L", "close the menu it opened"},
 	}},
 	{"Editors", []keyDesc{
 		{"↑/↓ tab", "move"},

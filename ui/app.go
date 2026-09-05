@@ -137,6 +137,8 @@ type Model struct {
 	lv     *live // live screen (subscribe, watch, events)
 	lvBack screen
 
+	mn *menu // the open Lotus-style menu above the tree, nil when none
+
 	// details screen
 	detail   node
 	rawJSON  bool
